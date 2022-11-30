@@ -10,6 +10,9 @@ class App:
         # app setting
         setLogging()
         self.config = Config()
+        self.target = self.checkFirstExec()
+        self.fileChecker = self.createFileChecker()
+        self.observer = self.fileChecker.observer
         
     def checkFirstExec(self):
         try:
@@ -19,22 +22,21 @@ class App:
             self.config.setConfig("CLIENT_CONFIG", "target_path", target)
         return target
     
-    def run(self, observer):
-        observer.start()
+    def createFileChecker(self):
+        return FileChecker(self.target)
+    
+    def run(self):
+        self.observer.start()
         try:
             while True:
                 time.sleep(1)
                 printLog("watching file changed...")
         except KeyboardInterrupt:
-            observer.stop()
-        observer.join()
+            self.observer.stop()
+        self.observer.join()
         
 
 if __name__ == '__main__':
     app = App()
-    target = app.checkFirstExec()           # target setting
-    fileChecker = FileChecker(target)       # create File Checker
-    
-    # run
-    app.run(fileChecker.observer)           # run file checker
+    app.run()
         
