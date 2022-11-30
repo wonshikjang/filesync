@@ -4,21 +4,22 @@ from log import printLog, setLogging
 from FileChecker import FileChecker
 from config.Config import Config
     
+config = Config()
+
 class App:
     def __init__(self):
         # app setting
         setLogging()
-        self.config = Config()
         self.target = self.checkFirstExec()
         self.fileChecker = self.createFileChecker()
         self.observer = self.fileChecker.observer
         
     def checkFirstExec(self):
         try:
-            target = self.config.getConfig("CLIENT_CONFIG", "target_path")
+            target = config.getConfig("CLIENT_CONFIG", "target_path")
         except KeyError:
             target = input("Input yout SYNC PATH: ")
-            self.config.setConfig("CLIENT_CONFIG", "target_path", target)
+            config.setConfig("CLIENT_CONFIG", "target_path", target)
         return target
     
     def createFileChecker(self):
