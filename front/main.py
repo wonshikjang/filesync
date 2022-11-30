@@ -1,7 +1,6 @@
 import os
 import time
-from log import printLog
-from log import setLogging
+from log import printLog, setLogging
 from FileChecker import FileChecker
 from config.Config import Config
     
