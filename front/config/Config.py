@@ -1,17 +1,26 @@
 import configparser
+import os
 
 class Config:
     def __init__(self):
         self.config = configparser.ConfigParser()
+        self.ini_path = self.findIni()
+        
+    def findIni(self):
+        for (path, dir, files) in os.walk("."):
+            for filename in files:
+                ext = os.path.splitext(filename)[-1]
+                if ext == ".ini":
+                    return path + "/" + filename
         
     def getConfig(self, section, name):
-        self.config.read("./config/clientConfig.ini")
+        self.config.read(self.ini_path)
         return self.config[section][name]
     
     def setConfig(self, section, name, value):
-        self.config.read("./config/clientConfig.ini")
+        self.config.read(self.ini_path)
         self.config[section][name] = value
-        with open("./config/clientConfig.ini", "w") as f:
+        with open(self.ini_path, "w") as f:
             self.config.write(f)
         
     def resetConfig(self):
@@ -20,6 +29,6 @@ class Config:
             "SERVER_IP" : "서버주소",
             "PORT" : "포트번호",
         }
-        with open("./config/clientConfig.ini", "w") as f:
+        with open(self.ini_path, "w") as f:
             self.config.write(f)
             
