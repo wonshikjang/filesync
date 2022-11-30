@@ -1,5 +1,3 @@
-import time
-from log import printLog
 from File import File, FileList
 try:
     from watchdog.observers import Observer
@@ -8,26 +6,17 @@ except ModuleNotFoundError as e:
     print("Module \'watchdog\' is not found")
     os.system("pip install watchdog")
 
-def setObserver(target):
-    observer = Observer()
-    file_checker = FileChecker(target)
-    observer.schedule(file_checker, target, recursive=True)
-    observer.start()
-    
-    try:
-        while True:
-            time.sleep(1)
-            printLog("watching file changed...")
-    except KeyboardInterrupt:
-        observer.stop()
-    observer.join()
-
-
 class FileChecker(FileSystemEventHandler):
     def __init__(self, target):
         self.target = target
         self.filelist = FileList()
+        self.observer = self.setObserver(target)
     
+    def setObserver(self, target):
+        observer = Observer()
+        observer.schedule(self, target, recursive=True)
+        return observer
+        
     def on_created(self, event):
         print("----------created------------")
         print(event)

@@ -1,14 +1,27 @@
 import os
+import time
+from log import printLog
 from log import setLogging
-from config import Config
-from FileChecker import setObserver
+from FileChecker import FileChecker
 from config.Config import Config
 
 if __name__ == '__main__':
-    if not os.path.isfile("client.ini"):
-        # client.ini 파일 존재하지 않을 시
-        target = input("Input yout SYNC PATH: ")
-        Config.createConfig(target)
-    
     setLogging()
-    setObserver(target)
+    config = Config()
+    
+    try:
+        target = config.getConfig("CLIENT_CONFIG", "target_path")
+    except KeyError:
+        target = input("Input yout SYNC PATH: ")
+        config.setConfig("CLIENT_CONFIG", "target_path", target)
+        
+    fileChecker = FileChecker(target)
+    observer = fileChecker.observer
+    observer.start()
+    try:
+        while True:
+            time.sleep(1)
+            printLog("watching file changed...")
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
