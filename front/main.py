@@ -17,6 +17,7 @@ class App:
         self.menu = tkinter.Menu(self.window)
 
         self.menu_setting =  tkinter.Menu(self.menu, tearoff = 0)
+        self.menu_setting.add_command(label="Set server", command=self.set_server)
         self.menu_setting.add_command(label="Set path", command=self.set_path)
         self.menu_setting.add_separator()
         self.menu_setting.add_command(label="Exit", command=self.set_exit)
@@ -63,6 +64,12 @@ class App:
     def text_print(self, text):
         self.text_terminal.insert(tkinter.END, text+"\n")
         self.text_terminal.see(tkinter.END)
+
+    def set_server(self):
+        server = tkinter.simpledialog.askstring("Input", "Input server IP", parent=self.window)
+        port = tkinter.simpledialog.askstring("Input", "Input server port", parent=self.window)
+        config.setConfig("CLIENT_CONFIG", "server_ip", server)
+        config.setConfig("CLIENT_CONFIG", "port", port)
 
     def set_path(self):
         self.target = tkinter.filedialog.askdirectory(initialdir=self.target, title='Select sync path')
