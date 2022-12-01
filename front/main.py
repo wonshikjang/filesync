@@ -1,5 +1,6 @@
 import os
 import log
+from API import API
 from FileChecker import FileChecker
 from config.Config import Config
 import tkinter
@@ -40,6 +41,7 @@ class App:
         # app setting
         self.target = self.checkFirstExec()
         self.logger = log.logger(self)
+        self.api = API(config)
         self.fileChecker = self.createFileChecker()
         self.observer = self.fileChecker.observer
         self.observer.start()
@@ -55,7 +57,7 @@ class App:
         return target
     
     def createFileChecker(self):
-        return FileChecker(self.target, self.logger)
+        return FileChecker(self.target, self.logger, self.api)
     
     def run(self):
         self.logger.print_log("watching file changed...")

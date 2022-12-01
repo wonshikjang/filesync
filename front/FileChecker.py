@@ -1,6 +1,7 @@
 from File import File, FileList
 import asyncio
 import os, re
+from Error import CustomError
 try:
     from watchdog.observers import Observer
     from watchdog.events import RegexMatchingEventHandler
@@ -13,24 +14,51 @@ class FileChecker(RegexMatchingEventHandler):
         super().__init__(None, [".*\.py",".*\.pyc",".*\.ini"], False, False)
         self.target = _target
         self.filelist = FileList(self.target)
-        self.observer = self.setObserver(_target)
         self.logger = _logger
         self.api = _api
-        # self.getfiles()
-
-    # def getNeedToUpdate(self):
-    #     need_update = asyncio.run(self.api.getFileList())
         
-    #     # 기존 로컬 파일 탐색
-    #     for (path, dir, file) in os.walk(self.target):
-    #         for f in file:
-    #             f_loc = self.filelist.append("%s/%s" % (path, f))
+        # initial file sync
+        self.syncToServer(self.findToUpdate())
+        
+        self.observer = self.setObserver(_target)
+
+    def findToUpdate(self):
+        need_update = asyncio.run(self.api.getFileList())
+        print(need_update)
+        for (path, dir, file) in os.walk(self.target):
+            for f in file:
+                f_loc = self.filelist.append("%s/%s" % (path, f))
+                print(f_loc)
+                try:
+                    for f_ser in need_update:
+                        if f_loc.sync_path == f_ser["path"]:
+                            if f_loc.md5 == f_ser["md5"]:
+                                need_update.remove(f_ser)
+                                raise CustomError("Already checked")
+                            else:
+                                print(f_loc.name, "Delete Content modified file")
+                                os.remove(f_loc.real_path)
+                                raise CustomError("Already checked")
+                            break
+                    raise NotImplementedError("Delete path modified file")
+                except NotImplementedError as e:
+                    print(f_loc.name, e)
+                    os.remove(f_loc.real_path)
+                except CustomError as e:
+                    continue
                 
-    #             for f_ser in need_update:
-    #                 if f_loc.path == f_ser["path"] and f_loc.md5 == f_ser["md5"]:
-    #                     need_update.remove(f_ser)
-    #                     break
-    #     return need_update
+        for (path, dir, file) in os.walk(self.target):
+            for d in dir:
+                try:
+                    os.rmdir("%s/%s" % (path, d))
+                except:
+                    print(d, "Directory is not Empty")
+                    continue
+        return need_update
+    
+    def syncToServer(self, need_update):
+        # need_update 리스트 안 파일 다운로드 받기
+        pass
     
     def setObserver(self, target):
         observer = Observer()
@@ -54,8 +82,8 @@ class FileChecker(RegexMatchingEventHandler):
     def on_deleted(self, event):
         if event.is_directory:
             fs = self.filelist.del_dir(event.src_path)
-            if fs == -1:
-                self.logger.print_log("DELETE DIR ERROR")
+            if fs == []:
+                self.logger.print_log("DELETE EMPTY DIR")
                 return
             else:
                 for f in fs:

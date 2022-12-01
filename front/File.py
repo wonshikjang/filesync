@@ -68,7 +68,7 @@ class FileList():
                 self.fileList.remove(file)
                 del_files.append(file)
             
-        return del_files if len(del_files) > 0 else -1
+        return del_files
     
     def del_file(self, path): # deltet File
         for file in self.fileList:
@@ -113,6 +113,11 @@ class File():
         return f
         
     def makeMd5(self, path):
-        f = open(path, 'r').read()
-        md5 = hashlib.md5(f.encode()).hexdigest()
-        return md5
+        try:
+            f = open(path, 'r').read()
+            md5 = hashlib.md5(f.encode()).hexdigest()
+            return md5
+        except UnicodeDecodeError:
+            f = open(path, 'rb').read()
+            md5 = hashlib.md5(f).hexdigest()
+            return md5
