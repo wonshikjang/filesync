@@ -29,7 +29,7 @@ class FileChecker(RegexMatchingEventHandler):
     def on_moved(self, event):
         f = self.filelist.move(event.src_path, event.dest_path)
         if f == -1:
-            print("MOVE ERROR")
+            self.logger.print_log("MOVE ERROR")
             return
         else:
             self.logger.print_log("File '%s' moved \n\t\t\tfrom %s \n\t\t\tto   %s" % (f.name, event.src_path, event.dest_path))
@@ -39,7 +39,7 @@ class FileChecker(RegexMatchingEventHandler):
             print(event)
             fs = self.filelist.del_dir(event.src_path)
             if fs == -1:
-                print("DEL ERROR")
+                self.logger.print_log("DELETE DIR ERROR")
                 return
             else:
                 for f in fs:
@@ -48,7 +48,7 @@ class FileChecker(RegexMatchingEventHandler):
         else:
             f = self.filelist.del_file(event.src_path)
             if f == -1:
-                print("DEL ERROR")
+                self.logger.print_log("DELETE FILE ERROR")
                 return
             else:
                 self.logger.print_log("File '%s' deleted at %s" % (f.name, f.dir))
@@ -59,7 +59,7 @@ class FileChecker(RegexMatchingEventHandler):
             return
         f = self.filelist.modify(event.src_path)
         if f == -1:
-            print("MODIFY ERROR")
+            self.logger.print_log("MODIFY ERROR")
             return
         elif f == 0:
             return

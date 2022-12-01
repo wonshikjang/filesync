@@ -12,7 +12,7 @@ class App:
         # gui terminal
         self.window = tkinter.Tk()
         self.window.title("File Sync")
-        self.window.geometry("480x600")
+        self.window.geometry("600x600+0+0")
 
         self.menu = tkinter.Menu(self.window)
 
@@ -22,13 +22,17 @@ class App:
         self.menu_setting.add_command(label="Exit", command=self.set_exit)
         self.menu.add_cascade(label="Setting", menu=self.menu_setting)
 
-        self.scrollbar = tkinter.Scrollbar(self.window)
-        self.scrollbar.pack(side="right", fill="y")
+        self.scrollbar_vertical = tkinter.Scrollbar(self.window, orient="vertical")
+        self.scrollbar_vertical.pack(side="right", fill="y")
+        self.scrollbar_horizontal = tkinter.Scrollbar(self.window, orient="horizontal")
+        self.scrollbar_horizontal.pack(side="bottom", fill="x")
 
-        self.text_terminal = tkinter.Text(self.window, yscrollcommand=self.scrollbar.set)
+        self.text_terminal = tkinter.Text(self.window, wrap="none", xscrollcommand=self.scrollbar_horizontal.set, yscrollcommand=self.scrollbar_vertical.set)
         self.text_terminal.bind("<Key>", lambda e: "break")
         self.text_terminal.pack(side="left", fill="both", expand=True)
-        self.scrollbar.config(command=self.text_terminal.yview)
+
+        self.scrollbar_vertical.config(command=self.text_terminal.yview)
+        self.scrollbar_horizontal.config(command=self.text_terminal.xview)
 
         self.window.config(menu=self.menu)
 
