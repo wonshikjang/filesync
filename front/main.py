@@ -1,3 +1,4 @@
+import os
 import log
 from FileChecker import FileChecker
 from config.Config import Config
@@ -42,7 +43,9 @@ class App:
         try:
             target = config.getConfig("CLIENT_CONFIG", "target_path")
         except KeyError:
-            target = tkinter.filedialog.askdirectory(initialdir=self.target, title='Select sync path')
+            target = ""
+            while not os.path.isdir(target):
+                target = tkinter.filedialog.askdirectory(title='Select sync path')
             config.setConfig("CLIENT_CONFIG", "target_path", target)
         return target
     
@@ -59,6 +62,8 @@ class App:
 
     def set_path(self):
         self.target = tkinter.filedialog.askdirectory(initialdir=self.target, title='Select sync path')
+        while not os.path.isdir(self.target):
+            self.target = tkinter.filedialog.askdirectory(title='Select sync path')
         config.setConfig("CLIENT_CONFIG", "target_path", self.target)
         self.observer.stop()
         self.observer.join()
@@ -69,6 +74,7 @@ class App:
         self.fileChecker = self.createFileChecker()
         self.observer = self.fileChecker.observer
         self.observer.start()
+        self.logger.print_log("Changed sync folder to " + self.target)
 
     def set_exit(self):
         self.observer.stop()
