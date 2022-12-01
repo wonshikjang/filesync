@@ -1,5 +1,5 @@
 from File import File, FileList
-from log import printLog
+import os
 try:
     from watchdog.observers import Observer
     from watchdog.events import RegexMatchingEventHandler
@@ -8,11 +8,12 @@ except ModuleNotFoundError as e:
     os.system("pip install watchdog")
 
 class FileChecker(RegexMatchingEventHandler):
-    def __init__(self, target):
+    def __init__(self, _target, _logger):
         super().__init__(None, [".*\.py"], False, False)
-        self.target = target
+        self.target = _target
         self.filelist = FileList()
-        self.observer = self.setObserver(target)
+        self.observer = self.setObserver(_target)
+        self.logger = _logger
     
     def setObserver(self, target):
         observer = Observer()
@@ -23,7 +24,7 @@ class FileChecker(RegexMatchingEventHandler):
         if event.is_directory:
             return
         f = self.filelist.append(event.src_path)
-        printLog("File '%s' created at %s" % (f.name, f.dir))
+        self.logger.print_log("File '%s' created at %s" % (f.name, f.dir))
         
     def on_moved(self, event):
         f = self.filelist.move(event.src_path, event.dest_path)
@@ -31,7 +32,7 @@ class FileChecker(RegexMatchingEventHandler):
             print("MOVE ERROR")
             return
         else:
-            printLog("File '%s' moved \n\t\t\tfrom %s \n\t\t\tto   %s" % (f.name, event.src_path, event.dest_path))
+            self.logger.print_log("File '%s' moved \n\t\t\tfrom %s \n\t\t\tto   %s" % (f.name, event.src_path, event.dest_path))
     
     def on_deleted(self, event):
         if event.is_directory:
@@ -42,7 +43,7 @@ class FileChecker(RegexMatchingEventHandler):
                 return
             else:
                 for f in fs:
-                    printLog("File '%s' deleted at %s" % (f.name, f.dir))
+                    self.logger.print_log("File '%s' deleted at %s" % (f.name, f.dir))
                     del f
         else:
             f = self.filelist.del_file(event.src_path)
@@ -50,7 +51,7 @@ class FileChecker(RegexMatchingEventHandler):
                 print("DEL ERROR")
                 return
             else:
-                printLog("File '%s' deleted at %s" % (f.name, f.dir))
+                self.logger.print_log("File '%s' deleted at %s" % (f.name, f.dir))
                 del f
         
     def on_modified(self, event):
@@ -63,5 +64,5 @@ class FileChecker(RegexMatchingEventHandler):
         elif f == 0:
             return
         else:
-            printLog("File '%s' Modified %d bytes to %d bytes" % (f[1].name, f[0].size, f[1].size)) 
+            self.logger.print_log("File '%s' Modified %d bytes to %d bytes" % (f[1].name, f[0].size, f[1].size)) 
             del f[0]        
