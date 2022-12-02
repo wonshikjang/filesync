@@ -1,5 +1,6 @@
 import os.path
 import uuid
+import re
 from fastapi import FastAPI,Depends, UploadFile,WebSocket, HTTPException
 from sqlalchemy.orm import Session
 from starlette.middleware.cors import CORSMiddleware
@@ -10,8 +11,7 @@ import model, crud, schema
 from database import engine
 from database import SessionLocal
 from fastapi.responses import FileResponse, HTMLResponse
-
-
+from base64 import b64encode
 
 model.Base.metadata.create_all(bind=engine)
 
@@ -72,7 +72,6 @@ def get_db():
 
 @app.post( "/", name="file data 생성",response_model= schema.ReadFileData)
 async def create_file_data(req: schema.BaseFileData, db: Session = Depends(get_db)):
-    print(req) 
     return crud.create_record(db, req)
 
 @app.get("/list", name ="file data list 조회", response_model= list[schema.ReadFileData])
@@ -121,16 +120,43 @@ async def upload_file(file: UploadFile):
 
     content = await file.read()
     filename = file.filename
-    #filename = f"{str(uuid.uuid4())}.jpg"  # uuid로 유니크한 파일명으로 변경
     with open(os.path.join(UPLOAD_DIR, filename), "wb") as fp:
         fp.write(content)  # 서버 로컬 스토리지에 이미지 저장 (쓰기)
 
     return {"filename": filename}
 
 @app.get("/download/file/{file_id}")
-async def download_file(file_id: str, db: Session = Depends(get_db)):
-    file_path = f"./static/{file_id}"
-    return FileResponse(file_path)
+async def download_file(file_id:str, db: Session = Depends(get_db)):
+    db_record = crud.get_record(db, file_id)
+    if db_record is None:
+        raise HTTPException(status_code=404, detail="Record not found")
+    # fileType = db_record.name.split(".")[-1]
+    # file_path = f"./static/{file_id}.{fileType}"
+    # res = FileResponse(file_path)
+    # if not res:
+    #     raise HTTPException(status_code=404, detail="file not found")
+    # print(res.headers)
+    
+    # path = f"{db_record.path}".encode('utf-8')
+    # res.headers["file_path"] = str(path)
+    return db_record
+
+@app.get("/static/{file_name}")
+async def download_file(file_name:str, db: Session = Depends(get_db)):
+    # db_record = crud.get_record(db, file_id)
+    # if db_record is None:
+    #     raise HTTPException(status_code=404, detail="Record not found")
+    # fileType = db_record.name.split(".")[-1]
+    # file_path = f"./static/{file_id}.{fileType}"
+    # res = FileResponse(file_path)
+    # if not res:
+    #     raise HTTPException(status_code=404, detail="file not found")
+    # print(res.headers)
+    
+    # path = f"{db_record.path}".encode('utf-8')
+    # res.headers["file_path"] = str(path)
+    return FileResponse(f"./static/{file_name}")
+
 
 @app.get("/")
 async def get():
