@@ -302,5 +302,6 @@ poetry.toml
 
 # static files
 /back/static/*
+*/secrets.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python,pycharm,visualstudiocode

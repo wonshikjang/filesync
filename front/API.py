@@ -56,7 +56,7 @@ class API():
                 
     async def downloadFile(self, file_id):
         async with aiohttp.ClientSession() as session:
-            async with session.get(self._url("/download/phto/%s" % file_id)) as res:
+            async with session.get(self._url("/download/file/%s" % file_id)) as res:
                 self.logger.print_log_server("RES HTTP/1.1 %s" % res.status)
                 self.logger.print_log_server(res)
                 self.logger.print_log_server(await res.text())
