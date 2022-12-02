@@ -1,6 +1,6 @@
 import os.path
 import uuid
-from fastapi import FastAPI,Depends, UploadFile
+from fastapi import FastAPI,Depends, UploadFile,WebSocket, HTTPException
 from sqlalchemy.orm import Session
 from starlette.middleware.cors import CORSMiddleware
 from starlette.status import HTTP_204_NO_CONTENT
@@ -9,11 +9,45 @@ from starlette.status import HTTP_204_NO_CONTENT
 import model, crud, schema
 from database import engine
 from database import SessionLocal
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
+
+
 
 model.Base.metadata.create_all(bind=engine)
 
-
+html = """
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Chat</title>
+    </head>
+    <body>
+        <h1>WebSocket Chat</h1>
+        <form action="" onsubmit="sendMessage(event)">
+            <input type="text" id="messageText" autocomplete="off"/>
+            <button>Send</button>
+        </form>
+        <ul id='messages'>
+        </ul>
+        <script>
+            var ws = new WebSocket("ws://localhost:8000/ws");
+            ws.onmessage = function(event) {
+                var messages = document.getElementById('messages')
+                var message = document.createElement('li')
+                var content = document.createTextNode(event.data)
+                message.appendChild(content)
+                messages.appendChild(message)
+            };
+            function sendMessage(event) {
+                var input = document.getElementById("messageText")
+                ws.send(input.value)
+                input.value = ''
+                event.preventDefault()
+            }
+        </script>
+    </body>
+</html>
+"""
 
 
 app = FastAPI()
@@ -82,25 +116,6 @@ async def update_file_data(req: schema.BaseFileData, id: str, db: Session = Depe
     return crud.update_record(db, db_record, req)
 
 @app.post("/file")
-async def upload_file(file:UploadFile):
-    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath((__file__))))
-    FILE_DIR = os.path.join(BASE_DIR,'static/')
-    SERVER_IMG_DIR = os.path.join('http://localhost:8080/','static/')
-
-
-    """
-    UPLOAD_DIR = "./file"
-
-    content = await file.read()
-    filename = file.filename
-    id = f"{str(uuid.uuid4())}"
-    with open(os.path.join(UPLOAD_DIR, filename), "wb") as fp:
-        fp.write(content)
-    return { "id": id, "name" : filename, "path": UPLOAD_DIR}
-    """
-
-
-@app.post("/photo")
 async def upload_photo(file: UploadFile):
     UPLOAD_DIR = "./static"  # 이미지를 저장할 서버 경로
 
@@ -112,7 +127,17 @@ async def upload_photo(file: UploadFile):
 
     return {"filename": filename}
 
-@app.get("/download/photo/{photo_id}")
-async def download_photo(photo_id: str, db: Session = Depends(get_db)):
-    file_path = f"./static/{photo_id}"
+@app.get("/download/file/{file_id}")
+async def download_photo(file_id: str, db: Session = Depends(get_db)):
+    file_path = f"./static/{file_id}"
     return FileResponse(file_path)
+
+@app.get("/")
+async def get():
+    return HTMLResponse(html)
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    while True:
+        data = await websocket.receive_json()
+        await websocket.send_json(data)
