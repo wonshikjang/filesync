@@ -300,4 +300,7 @@ poetry.toml
 .history
 .ionide
 
+# static files
+/back/static/*
+
 # End of https://www.toptal.com/developers/gitignore/api/python,pycharm,visualstudiocode
