@@ -116,7 +116,7 @@ async def update_file_data(req: schema.BaseFileData, id: str, db: Session = Depe
     return crud.update_record(db, db_record, req)
 
 @app.post("/file")
-async def upload_photo(file: UploadFile):
+async def upload_file(file: UploadFile):
     UPLOAD_DIR = "./static"  # 이미지를 저장할 서버 경로
 
     content = await file.read()
@@ -128,7 +128,7 @@ async def upload_photo(file: UploadFile):
     return {"filename": filename}
 
 @app.get("/download/file/{file_id}")
-async def download_photo(file_id: str, db: Session = Depends(get_db)):
+async def download_file(file_id: str, db: Session = Depends(get_db)):
     file_path = f"./static/{file_id}"
     return FileResponse(file_path)
 
