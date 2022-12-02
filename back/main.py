@@ -38,12 +38,12 @@ def get_db():
 
 @app.post( "/", name="file data 생성",response_model= schema.ReadFileData)
 async def create_file_data(req: schema.BaseFileData, db: Session = Depends(get_db)):
+    print(req) 
     return crud.create_record(db, req)
 
 @app.get("/list", name ="file data list 조회", response_model= list[schema.ReadFileData])
 async def read_file_data_list(db: Session = Depends(get_db)):
     db_list = crud.get_list(db)
-
     return db_list
 
 @app.get(
@@ -82,10 +82,22 @@ async def update_file_data(req: schema.BaseFileData, id: str, db: Session = Depe
     return crud.update_record(db, db_record, req)
 
 @app.post("/file")
-async def upload_file(file:UploadFile):
-    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath((__file__))))
-    FILE_DIR = os.path.join(BASE_DIR,'static/')
-    SERVER_IMG_DIR = os.path.join('http://localhost:8080/','static/')
+async def upload_photo(file: UploadFile):
+    UPLOAD_DIR = "./static"  # 이미지를 저장할 서버 경로
+    print(file)
+    content = await file.read()
+    filename = file.filename
+    # filename = f"{str(uuid.uuid4())}.jpg"  # uuid로 유니크한 파일명으로 변경
+    with open(os.path.join(UPLOAD_DIR, filename), "wb") as fp:
+        fp.write(content)  # 서버 로컬 스토리지에 이미지 저장 (쓰기)
+
+    return {"filename": filename}
+
+
+# async def upload_file(file:UploadFile):
+    # BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath((__file__))))
+    # FILE_DIR = os.path.join(BASE_DIR,'static/')
+    # SERVER_IMG_DIR = os.path.join('http://localhost:8080/','static/')
 
 
     """

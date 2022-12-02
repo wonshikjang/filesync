@@ -23,15 +23,15 @@ class FileList():
                 return f
         return None
 
-    # def pop(self, path=None):
-    #     if path:
-    #         for file in self.fileList:
-    #             if file.path == path:
-    #                 self.fileList.remove(file)
-    #                 return file
-    #         return None
-    #     else:
-    #         return self.fileList.pop()
+    def pop(self, path=None):
+        if path:
+            for file in self.fileList:
+                if file.path == path:
+                    self.fileList.remove(file)
+                    return file
+            return None
+        else:
+            return self.fileList.pop()
     
     def append(self, path):
         f = File(self.target, path)
@@ -70,13 +70,12 @@ class FileList():
             
         return del_files
     
-    def del_file(self, path): # deltet File
+    def del_file(self, path): # delete File
         for file in self.fileList:
             if file.real_path == path:
                 self.fileList.remove(file)
                 return file
         return -1
-    
     
 class File():
     def __init__(self, target, path): # target 경로, 파일 실제 경로
@@ -86,8 +85,12 @@ class File():
         self.real_path = path # 파일 실제 경로
         self.sync_path = re.sub(self.target, "Root", path) # 파일 가상 경로
         self.dir = self.sync_path[:len(self.sync_path)-(len(self.name)+1)] # 파일 가상 디렉토리
-        self.size = os.path.getsize(path) # 파일 사이즈
-        self.md5 = self.makeMd5(path) # 파일 md5
+        # self.size = os.path.getsize(path)
+        # ********** 파일 실제 다운로드 전까지 임시로 **************
+        self.size = os.path.getsize(path) if os.path.isfile(path) else None # 파일 사이즈
+        # self.md5 = self.makeMd5(path)
+        # ********** 파일 실제 다운로드 전까지 임시로 **************
+        self.md5 = self.makeMd5(path) if os.path.isfile(path) else None # 파일 md5
     
     def __del__(self):
         pass
@@ -96,8 +99,10 @@ class File():
         return "File : { \n\tid : %s, \n\tname : %s, \n\ttarget : %s, \n\tpath : %s, \n\tsize : %d, \n\tmd5 : %s \n}" % (self.id, self.name, self.target, self.sync_path, self.size, self.md5)
     
     def modify(self, path):
-        self.size = os.path.getsize(path)
-        self.md5 = self.makeMd5(path)
+        # self.size = os.path.getsize(path)
+        self.size = os.path.getsize(path) if os.path.isfile(path) else None # 파일 사이즈
+        # self.md5 = self.makeMd5(path)
+        self.md5 = self.makeMd5(path) if os.path.isfile(path) else None # 파일 md5
         
     def move(self, path):
         self.name = path.split("/")[-1] 

@@ -41,7 +41,7 @@ class App:
         # app setting
         self.target = self.checkFirstExec()
         self.logger = log.logger(self)
-        self.api = API(config)
+        self.api = API(config, self.logger)
         self.fileChecker = self.createFileChecker()
         self.observer = self.fileChecker.observer
         self.observer.start()
