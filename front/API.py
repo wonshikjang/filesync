@@ -59,7 +59,6 @@ class API():
             async with session.get(self._url("/download/file/%s" % str(file_id))) as res:
                 f = await res.json()
                 url = "%s/static/%s.%s" % (self.url, f["id"], f["name"].split(".")[-1])
-                print(url) 
             async with session.get(url) as res:
                     if res.status == 200:
                         _f = await aiofiles.open("%s/%s" % (self.target, f["path"][5:]), mode='wb')

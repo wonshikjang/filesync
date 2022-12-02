@@ -1,4 +1,4 @@
-import os.path
+import os, os.path
 import uuid
 import re
 from fastapi import FastAPI,Depends, UploadFile,WebSocket, HTTPException
@@ -98,7 +98,13 @@ async def delete_file_data(id:str,db: Session = Depends(get_db)):
     db_api = crud.delete_record(db, id)
     if db_api != 1:
         raise HTTPException(status_code=404, detail="Record not found")
-        return -1
+    
+    filenames = os.listdir("./static")
+    print(filenames)
+    for filename in filenames:
+        if re.match(f"{id}\..*?", filename):
+            os.remove(f"./static/{filename}")
+    
     return Response(status_code=HTTP_204_NO_CONTENT)
 
 @app.put(
@@ -130,31 +136,10 @@ async def download_file(file_id:str, db: Session = Depends(get_db)):
     db_record = crud.get_record(db, file_id)
     if db_record is None:
         raise HTTPException(status_code=404, detail="Record not found")
-    # fileType = db_record.name.split(".")[-1]
-    # file_path = f"./static/{file_id}.{fileType}"
-    # res = FileResponse(file_path)
-    # if not res:
-    #     raise HTTPException(status_code=404, detail="file not found")
-    # print(res.headers)
-    
-    # path = f"{db_record.path}".encode('utf-8')
-    # res.headers["file_path"] = str(path)
     return db_record
 
 @app.get("/static/{file_name}")
 async def download_file(file_name:str, db: Session = Depends(get_db)):
-    # db_record = crud.get_record(db, file_id)
-    # if db_record is None:
-    #     raise HTTPException(status_code=404, detail="Record not found")
-    # fileType = db_record.name.split(".")[-1]
-    # file_path = f"./static/{file_id}.{fileType}"
-    # res = FileResponse(file_path)
-    # if not res:
-    #     raise HTTPException(status_code=404, detail="file not found")
-    # print(res.headers)
-    
-    # path = f"{db_record.path}".encode('utf-8')
-    # res.headers["file_path"] = str(path)
     return FileResponse(f"./static/{file_name}")
 
 
