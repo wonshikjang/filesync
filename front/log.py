@@ -10,6 +10,9 @@ class logger:
         logging.info(text)
         self.gui.text_print("[" + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "] "+ text)
 
+    def print_log_server(self, text):
+        logging.info(text)
+
     def set_config(self):
         logging.basicConfig(
             format='[%(asctime)s] %(message)s',

@@ -1,4 +1,6 @@
+import os
 import log
+from API import API
 from FileChecker import FileChecker
 from config.Config import Config
 import tkinter
@@ -11,29 +13,35 @@ class App:
         # gui terminal
         self.window = tkinter.Tk()
         self.window.title("File Sync")
-        self.window.geometry("480x600")
+        self.window.geometry("600x600+0+0")
 
         self.menu = tkinter.Menu(self.window)
 
         self.menu_setting =  tkinter.Menu(self.menu, tearoff = 0)
+        self.menu_setting.add_command(label="Set server", command=self.set_server)
         self.menu_setting.add_command(label="Set path", command=self.set_path)
         self.menu_setting.add_separator()
         self.menu_setting.add_command(label="Exit", command=self.set_exit)
         self.menu.add_cascade(label="Setting", menu=self.menu_setting)
 
-        self.scrollbar = tkinter.Scrollbar(self.window)
-        self.scrollbar.pack(side="right", fill="y")
+        self.scrollbar_vertical = tkinter.Scrollbar(self.window, orient="vertical")
+        self.scrollbar_vertical.pack(side="right", fill="y")
+        self.scrollbar_horizontal = tkinter.Scrollbar(self.window, orient="horizontal")
+        self.scrollbar_horizontal.pack(side="bottom", fill="x")
 
-        self.text_terminal = tkinter.Text(self.window, yscrollcommand=self.scrollbar.set)
+        self.text_terminal = tkinter.Text(self.window, wrap="none", xscrollcommand=self.scrollbar_horizontal.set, yscrollcommand=self.scrollbar_vertical.set)
         self.text_terminal.bind("<Key>", lambda e: "break")
         self.text_terminal.pack(side="left", fill="both", expand=True)
-        self.scrollbar.config(command=self.text_terminal.yview)
+
+        self.scrollbar_vertical.config(command=self.text_terminal.yview)
+        self.scrollbar_horizontal.config(command=self.text_terminal.xview)
 
         self.window.config(menu=self.menu)
 
         # app setting
         self.target = self.checkFirstExec()
         self.logger = log.logger(self)
+        self.api = API(config, self.logger)
         self.fileChecker = self.createFileChecker()
         self.observer = self.fileChecker.observer
         self.observer.start()
@@ -42,12 +50,14 @@ class App:
         try:
             target = config.getConfig("CLIENT_CONFIG", "target_path")
         except KeyError:
-            target = tkinter.filedialog.askdirectory(initialdir=self.target, title='Select sync path')
+            target = ""
+            while not os.path.isdir(target):
+                target = tkinter.filedialog.askdirectory(title='Select sync path')
             config.setConfig("CLIENT_CONFIG", "target_path", target)
         return target
     
     def createFileChecker(self):
-        return FileChecker(self.target, self.logger)
+        return FileChecker(self.target, self.logger, self.api)
     
     def run(self):
         self.logger.print_log("watching file changed...")
@@ -57,8 +67,16 @@ class App:
         self.text_terminal.insert(tkinter.END, text+"\n")
         self.text_terminal.see(tkinter.END)
 
+    def set_server(self):
+        server = tkinter.simpledialog.askstring("Input", "Input server IP", parent=self.window)
+        port = tkinter.simpledialog.askstring("Input", "Input server port", parent=self.window)
+        config.setConfig("CLIENT_CONFIG", "server_ip", server)
+        config.setConfig("CLIENT_CONFIG", "port", port)
+
     def set_path(self):
         self.target = tkinter.filedialog.askdirectory(initialdir=self.target, title='Select sync path')
+        while not os.path.isdir(self.target):
+            self.target = tkinter.filedialog.askdirectory(title='Select sync path')
         config.setConfig("CLIENT_CONFIG", "target_path", self.target)
         self.observer.stop()
         self.observer.join()
@@ -69,6 +87,7 @@ class App:
         self.fileChecker = self.createFileChecker()
         self.observer = self.fileChecker.observer
         self.observer.start()
+        self.logger.print_log("Changed sync folder to " + self.target)
 
     def set_exit(self):
         self.observer.stop()

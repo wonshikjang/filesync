@@ -72,12 +72,12 @@ def get_db():
 
 @app.post( "/", name="file data 생성",response_model= schema.ReadFileData)
 async def create_file_data(req: schema.BaseFileData, db: Session = Depends(get_db)):
+    print(req) 
     return crud.create_record(db, req)
 
 @app.get("/list", name ="file data list 조회", response_model= list[schema.ReadFileData])
 async def read_file_data_list(db: Session = Depends(get_db)):
     db_list = crud.get_list(db)
-
     return db_list
 
 @app.get(
