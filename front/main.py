@@ -2,7 +2,7 @@ import os
 import Logger
 from FileChecker import FileChecker
 from config.Config import Config
-import tkinter
+import mttkinter as tkinter
 import tkinter.filedialog
     
 config = Config()
@@ -38,8 +38,14 @@ class App:
         self.window.config(menu=self.menu)
 
         # app setting
-        self.target = self.checkFirstExec()
         self.logger = Logger.Logger(self)
+
+        self.target = self.checkFirstExec()
+        while not os.path.isdir(self.target):
+            self.target = tkinter.filedialog.askdirectory(title='Select sync path')
+        config.setConfig("CLIENT_CONFIG", "target_path", self.target)
+        self.logger.print_log("Target path : " + self.target)
+
         self.fileChecker = self.createFileChecker()
         self.observer = self.fileChecker.observer
         # self.observer.start()
@@ -59,7 +65,7 @@ class App:
     
     def run(self):
         self.logger.print_log("WATCHING FILE CHANGED...")
-        self.window.after(5000, self.run)
+        self.window.after(10000, self.run)
     
     def text_print(self, text):
         self.text_terminal.insert(tkinter.END, text+"\n")
@@ -97,4 +103,3 @@ if __name__ == '__main__':
     app = App()
     app.window.after(0, app.run)
     app.window.mainloop()
-        
