@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 
-class logger:
+class Logger:
     def __init__(self, _gui):
          self.set_config()
          self.gui = _gui
@@ -11,7 +11,7 @@ class logger:
         self.gui.text_print("[" + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "] "+ text)
 
     def print_log_server(self, status, res, data):
-        logging.info("RES HTTP/1.1 %s" % res.status)
+        logging.info(status)
         logging.info(res)
         logging.info(data)
         

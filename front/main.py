@@ -1,5 +1,5 @@
 import os
-import log
+import Logger
 from FileChecker import FileChecker
 from config.Config import Config
 import tkinter
@@ -39,7 +39,7 @@ class App:
 
         # app setting
         self.target = self.checkFirstExec()
-        self.logger = log.logger(self)
+        self.logger = Logger.Logger(self)
         self.fileChecker = self.createFileChecker()
         self.observer = self.fileChecker.observer
         # self.observer.start()
