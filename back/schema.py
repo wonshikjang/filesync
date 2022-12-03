@@ -13,3 +13,4 @@ class BaseFileData(BaseModel):
 class ReadFileData(BaseFileData):
     create_time: datetime
     update_time: datetime
+   

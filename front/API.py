@@ -1,6 +1,7 @@
 import asyncio
 import requests
 import sys, os
+import time
 try:
     import aiohttp
     import aiofiles
@@ -10,7 +11,7 @@ except ModuleNotFoundError as e:
     os.system("python -m pip install aiofiles")
     import aiohttp
     import aiofiles
-
+    
 class API():
     def __init__(self, config, logger):
         self.config = config
@@ -20,7 +21,7 @@ class API():
         self.target = config.getConfig("CLIENT_CONFIG", "target_path")
         self.url = "%s:%s" % (self.server_ip, self.port)
 
-    def _url(self, url):
+    def _url(self, url=""):
         return self.url + url
 
     async def getFileList(self):
@@ -63,4 +64,16 @@ class API():
                     if res.status == 200:
                         _f = await aiofiles.open("%s/%s" % (self.target, f["path"][5:]), mode='wb')
                         await _f.write(await res.read())
-                        await _f.close()                
+                        await _f.close()
+                
+    async def connectSocket(self):
+        async with aiohttp.ClientSession() as session:     
+            async with session.ws_connect(self._url("/ws")) as ws:
+                while True:
+                    await ws.send_str("Hello world!")
+                    print(await ws.receive_str())
+                    print(await ws.receive_str())
+                    print(ws)
+                    time.sleep(10)
+                    
+        

@@ -4,14 +4,11 @@ from model import FileData
 import schema
 
 
-
 def get_list(db: Session):
     return db.query(FileData).all()
 
-
 def get_record(db: Session, id: str):
     return db.query(FileData).filter(FileData.id == id).first()
-
 
 def create_record(db: Session, data: schema.BaseFileData):
     db_record = FileData(**data.dict())
@@ -19,7 +16,6 @@ def create_record(db: Session, data: schema.BaseFileData):
     db.commit()
     db.refresh(db_record)
     return db_record
-
 
 def delete_record(db: Session, id: str):
     db_record = get_record(db, id)

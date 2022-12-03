@@ -2,8 +2,10 @@ from File import File, FileList
 import asyncio
 import os, re
 import uuid
-from API import API
 from Error import AlreadyChecked, NeedToUpdated
+from API import API
+import nest_asyncio
+nest_asyncio.apply()
 try:
     from watchdog.observers import Observer
     from watchdog.events import RegexMatchingEventHandler
@@ -22,6 +24,11 @@ class FileChecker(RegexMatchingEventHandler):
         self.observer = self.setObserver(self.target)
         # initial file sync
         self.syncToServer(self.findToUpdate())
+        self.observer.start()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        asyncio.get_event_loop().run_until_complete(self.api.connectSocket());
+        asyncio.get_event_loop().run_forever();
 
     def findToUpdate(self):
         self.logger.print_log("GETTING FILE DATAS FROM SERVER")
@@ -75,7 +82,6 @@ class FileChecker(RegexMatchingEventHandler):
             f = self.filelist.append("%s%s" % (self.target, file["path"][4:]))
             f.id = uuid.UUID(file["id"])
         self.logger.print_log("SYNCHRONIZATION COMPLETE")
-        self.observer.start()
     
     def setObserver(self, target):
         observer = Observer()

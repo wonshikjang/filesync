@@ -4,6 +4,7 @@ from FileChecker import FileChecker
 from config.Config import Config
 import mttkinter as tkinter
 import tkinter.filedialog
+import asyncio
     
 config = Config()
 
