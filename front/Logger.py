@@ -8,7 +8,7 @@ class Logger:
 
     def print_log(self, text):
         logging.info(text)
-        self.gui.text_print("[" + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "] "+ text)
+        #self.gui.text_print("[" + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "] "+ text)
 
     def print_log_server(self, status, res, data):
         logging.info(status)

@@ -1,6 +1,4 @@
-import asyncio
-import requests
-import sys, os
+import os
 import time
 try:
     import aiohttp
@@ -31,13 +29,13 @@ class API():
                 return files
 
     async def createFile(self, file):
-        fileJson = { "id": str(file.id), "name": file.name, "path": file.sync_path, "md5": file.md5 }
+        fileJson = { "id": str(file.id), "name": file.name, "path": str(file.sync_path.as_posix()), "md5": file.md5 }
         async with aiohttp.ClientSession() as session:
             async with session.post(self._url("/"), json=fileJson) as res:
                 self.logger.print_log_server("RES HTTP/1.1 %s" % res.status, res, await res.text())
     
     async def modifyFile(self, file):
-        fileJson = { "id": str(file.id), "name": file.name, "path": file.sync_path, "md5": file.md5 }
+        fileJson = { "id": str(file.id), "name": file.name, "path": str(file.sync_path.as_posix()), "md5": file.md5 }
         async with aiohttp.ClientSession() as session:
             async with session.put(self._url("/%s" % str(file.id)), json=fileJson) as res:
                 self.logger.print_log_server("RES HTTP/1.1 %s" % res.status, res, await res.json())

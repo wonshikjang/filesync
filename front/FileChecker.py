@@ -103,7 +103,7 @@ class FileChecker(RegexMatchingEventHandler):
     def on_moved(self, event):
         f = self.filelist.move(event.src_path, event.dest_path)
         if f == -1:
-            self.logger.print_log("MOVE ERROR :", event.src_path, "TO", event.dest_path)
+            self.logger.print_log("MOVE ERROR : %s TO %s" % (event.src_path, event.dest_path))
             return
         else:
             self.logger.print_log("FILE '%s' MOVED \n%sFROM %s \n%sTO%s" % (f.name, " "*21, re.sub(self.target, "Root", event.src_path), " "*21, re.sub(self.target, "Root", event.dest_path)))
@@ -143,7 +143,7 @@ class FileChecker(RegexMatchingEventHandler):
         elif f == 0:
             return
         else:
-            asyncio.run(self.api.modifyFile(f))
-            asyncio.run(self.api.uploadFile(f))
+            asyncio.run(self.api.modifyFile(f[1]))
+            asyncio.run(self.api.uploadFile(f[1]))
             self.logger.print_log("File '%s' Modified %d bytes to %d bytes" % (f[1].name, f[0].size, f[1].size)) 
             del f[0]        

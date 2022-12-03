@@ -4,9 +4,6 @@ from FileChecker import FileChecker
 from config.Config import Config
 import mttkinter as tkinter
 import tkinter.filedialog
-import asyncio
-    
-config = Config()
 
 class App:
     def __init__(self):
@@ -40,11 +37,12 @@ class App:
 
         # app setting
         self.logger = Logger.Logger(self)
+        self.config = Config()
 
         self.target = self.checkFirstExec()
         while not os.path.isdir(self.target):
             self.target = tkinter.filedialog.askdirectory(title='Select sync path')
-        config.setConfig("CLIENT_CONFIG", "target_path", self.target)
+        self.config.setConfig("CLIENT_CONFIG", "target_path", self.target)
         self.logger.print_log("Target path : " + self.target)
 
         self.fileChecker = self.createFileChecker()
@@ -53,16 +51,16 @@ class App:
         
     def checkFirstExec(self):
         try:
-            target = config.getConfig("CLIENT_CONFIG", "target_path")
+            target = self.config.getConfig("CLIENT_CONFIG", "target_path")
         except KeyError:
             target = ""
             while not os.path.isdir(target):
                 target = tkinter.filedialog.askdirectory(title='Select sync path')
-            config.setConfig("CLIENT_CONFIG", "target_path", target)
+            self.config.setConfig("CLIENT_CONFIG", "target_path", target)
         return target
     
     def createFileChecker(self):
-        return FileChecker(self.target, self.logger, config)
+        return FileChecker(self.target, self.logger, self.config)
     
     def run(self):
         self.logger.print_log("WATCHING FILE CHANGED...")
@@ -75,14 +73,14 @@ class App:
     def set_server(self):
         server = tkinter.simpledialog.askstring("Input", "Input server IP", parent=self.window)
         port = tkinter.simpledialog.askstring("Input", "Input server port", parent=self.window)
-        config.setConfig("CLIENT_CONFIG", "server_ip", server)
-        config.setConfig("CLIENT_CONFIG", "port", port)
+        self.config.setConfig("CLIENT_CONFIG", "server_ip", server)
+        self.config.setConfig("CLIENT_CONFIG", "port", port)
 
     def set_path(self):
         self.target = tkinter.filedialog.askdirectory(initialdir=self.target, title='Select sync path')
         while not os.path.isdir(self.target):
             self.target = tkinter.filedialog.askdirectory(title='Select sync path')
-        config.setConfig("CLIENT_CONFIG", "target_path", self.target)
+        self.config.setConfig("CLIENT_CONFIG", "target_path", self.target)
         self.observer.stop()
         self.observer.join()
 
@@ -102,5 +100,5 @@ class App:
 
 if __name__ == '__main__':
     app = App()
-    app.window.after(0, app.run)
-    app.window.mainloop()
+    #app.window.after(0, app.run)
+    #app.window.mainloop()

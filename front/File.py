@@ -1,7 +1,7 @@
 import uuid
 import hashlib
-import os
 import re
+from pathlib import Path
 
 class FileList():
     def __init__(self, target):
@@ -19,14 +19,14 @@ class FileList():
     
     def search(self, path):
         for f in self.fileList:
-            if f.real_path == path:
+            if f.real_path.resolve() == Path(path).resolve():
                 return f
         return None
 
     def pop(self, path=None):
         if path:
             for file in self.fileList:
-                if file.path == path:
+                if file.path.resolve() == Path(path).resolve():
                     self.fileList.remove(file)
                     return file
             return None
@@ -34,20 +34,20 @@ class FileList():
             return self.fileList.pop()
     
     def append(self, path):
-        f = File(self.target, path)
+        f = File(self.target, str(Path(path)))
         self.fileList.append(f)
         return f
                 
     def move(self, src, dest):
         for file in self.fileList:
-            if file.real_path == src:
+            if file.real_path.resolve() == Path(src).resolve():
                 file.move(dest)
                 return file
         return -1
     
     def modify(self, path):
         for file in self.fileList:
-            if file.real_path == path:
+            if file.real_path.resolve() == Path(path).resolve():
                 file_before = file.copy()
                 file.modify(path)
                 if file.md5 == file_before.md5:
@@ -63,7 +63,7 @@ class FileList():
         while i > 0:
             i -= 1
             file = self.fileList[i]
-            pattern = "%s.*" % path
+            pattern = "%s.*" % str(Path(path))
             if re.match(pattern, file.real_path):
                 self.fileList.remove(file)
                 del_files.append(file)
@@ -72,21 +72,21 @@ class FileList():
     
     def del_file(self, path): # delete File
         for file in self.fileList:
-            if file.real_path == path:
+            if file.real_path.resolve() == Path(path).resolve():
                 self.fileList.remove(file)
                 return file
         return -1
     
 class File():
-    def __init__(self, target, path): # target 경로, 파일 실제 경로
+    def __init__(self, _target, _path): # target 경로, 파일 실제 경로
         self.id = uuid.uuid4()
-        self.name = path.split("/")[-1] # 파일 이름
-        self.target = target # 타겟 경로
-        self.real_path = path # 파일 실제 경로
-        self.sync_path = re.sub(self.target, "Root", path) # 파일 가상 경로
-        self.dir = self.sync_path[:len(self.sync_path)-(len(self.name)+1)] # 파일 가상 디렉토리
-        self.size = os.path.getsize(path)
-        self.md5 = self.makeMd5(path)
+        self.target = Path(_target) # target 경로
+        self.real_path = Path(_path) # 파일 실제 경로
+        self.name = self.real_path.name # 파일 이름
+        self.sync_path = Path(str(self.real_path).replace(str(self.target), "Root"))
+        self.dir = self.sync_path.parent # 파일 가상 디렉토리
+        self.size = self.real_path.stat().st_size
+        self.md5 = self.makeMd5(_path)
     
     def __del__(self):
         pass
@@ -95,14 +95,16 @@ class File():
         return "File : { \n\tid : %s, \n\tname : %s, \n\ttarget : %s, \n\tpath : %s, \n\tsize : %d, \n\tmd5 : %s \n}" % (self.id, self.name, self.target, self.sync_path, self.size, self.md5)
     
     def modify(self, path):
-        self.size = os.path.getsize(path)
-        self.md5 = self.makeMd5(path)
+        temp_path = Path(path)
+        self.size = temp_path.stat().st_size
+        self.md5 = self.makeMd5(temp_path)
         
     def move(self, path):
-        self.name = path.split("/")[-1] 
-        self.real_path = path # 파일 실제 경로
-        self.sync_path = re.sub(self.target, "Root", path) # 파일 가상 경로
-        self.dir = self.sync_path[:len(self.sync_path)-(len(self.name)+1)] # 파일 가상 디렉토리
+        temp_path = Path(path)
+        self.name = temp_path.name
+        self.real_path = temp_path # 파일 실제 경로
+        self.sync_path = Path(str(self.real_path).replace(str(self.target), "Root")) # 파일 가상 경로
+        self.dir = self.sync_path.parent # 파일 가상 디렉토리
         
     def copy(self):
         f = File(self.target, self.real_path)
@@ -112,11 +114,12 @@ class File():
         return f
         
     def makeMd5(self, path):
+        temp_path = Path(path).resolve()
         try:
-            f = open(path, 'r').read()
+            f = open(str(temp_path), 'r').read()
             md5 = hashlib.md5(f.encode()).hexdigest()
             return md5
         except UnicodeDecodeError:
-            f = open(path, 'rb').read()
+            f = open(temp_path, 'rb').read()
             md5 = hashlib.md5(f).hexdigest()
             return md5
