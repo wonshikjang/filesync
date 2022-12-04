@@ -2,6 +2,7 @@ import uuid
 import hashlib
 import re
 from pathlib import Path
+from Error import AlreadyChecked
 
 class FileList():
     def __init__(self, target):
@@ -22,7 +23,28 @@ class FileList():
             if f.real_path.resolve() == Path(path).resolve():
                 return f
         return None
-
+    
+    def search_id(self, _id):
+        for f in self.fileList:
+            if str(f.id) == str(_id):
+                return f
+        return None
+    
+    def getRealPath(self, sync_path):
+        return Path(sync_path.replace("Root", str(self.target)))
+    
+    def checkInvalid(self, d_list):
+        invalid = []
+        for file in self.fileList:
+            try:
+                for d in d_list:
+                    if d["id"] == str(file.id):
+                        raise AlreadyChecked("Valid")
+                invalid.append(file)
+            except AlreadyChecked:
+                continue
+        return invalid
+            
     def pop(self, path=None):
         if path:
             for file in self.fileList:
@@ -57,6 +79,14 @@ class FileList():
                     return [file_before, file]
         return -1
     
+    def serverUpdate(self, f, id=None):
+        if f:
+            f.serverUpdating = not f.serverUpdating
+        else: 
+            for file in self.fileList:
+                if str(file.id) == id:
+                    file.serverUpdating = not file.serverUpdating
+    
     def del_dir(self, path): # delete Directory
         del_files = []
         i = len(self.fileList)
@@ -64,7 +94,7 @@ class FileList():
             i -= 1
             file = self.fileList[i]
             pattern = "%s.*" % str(Path(path))
-            if re.match(pattern, file.real_path):
+            if re.match(pattern, str(file.real_path)):
                 self.fileList.remove(file)
                 del_files.append(file)
             
@@ -87,6 +117,7 @@ class File():
         self.dir = self.sync_path.parent # 파일 가상 디렉토리
         self.size = self.real_path.stat().st_size
         self.md5 = self.makeMd5(_path)
+        self.serverUpdating = False
     
     def __del__(self):
         pass

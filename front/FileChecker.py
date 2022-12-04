@@ -2,8 +2,10 @@ from File import File, FileList
 import asyncio
 import os, re
 import uuid
+from pathlib import Path
 from Error import AlreadyChecked, NeedToUpdated
 from API import API
+import shutil
 import nest_asyncio
 nest_asyncio.apply()
 try:
@@ -24,10 +26,9 @@ class FileChecker(RegexMatchingEventHandler):
         self.observer = self.setObserver(self.target)
         # initial file sync
         self.syncToServer(self.findToUpdate())
-        self.observer.start()
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        asyncio.get_event_loop().run_until_complete(self.api.connectSocket());
+        asyncio.get_event_loop().run_until_complete(self.api.connectSocket(self));
         asyncio.get_event_loop().run_forever();
 
     def findToUpdate(self):
@@ -44,7 +45,7 @@ class FileChecker(RegexMatchingEventHandler):
                 f_loc = self.filelist.append("%s/%s" % (path, f))
                 try:
                     for f_ser in need_update:
-                        if f_loc.sync_path == f_ser["path"]:
+                        if f_loc.sync_path == Path(f_ser["path"]):
                             if f_loc.md5 == f_ser["md5"]:
                                 f_loc.id = uuid.UUID(f_ser["id"])
                                 need_update.remove(f_ser)
@@ -82,7 +83,61 @@ class FileChecker(RegexMatchingEventHandler):
             f = self.filelist.append("%s%s" % (self.target, file["path"][4:]))
             f.id = uuid.UUID(file["id"])
         self.logger.print_log("SYNCHRONIZATION COMPLETE")
+        self.observer.start()
     
+    def socketDataCheck(self, d_list):
+        self.logger.print_log("WATCHING FILE CHANGED...")
+        
+        # loc에 존재하는 invalid파일들 삭제
+        for f_loc in self.filelist.checkInvalid(d_list):
+            # 파일 삭제
+            self.filelist.serverUpdate(f_loc)
+            os.remove(f_loc.real_path)
+            self.filelist.del_file(f_loc.real_path)
+            self.logger.print_log("DELETED %s" % f_loc.name)
+        
+        for d in d_list:
+            f_loc = self.filelist.search_id(d["id"])
+            
+            # 파일이 존재하지 않으면 생성
+            if not f_loc:
+                # 파일 다운로드
+                self.filelist.serverUpdate(f_loc)
+                asyncio.run(self.api.downloadFile(f_loc.id))
+                self.filelist.serverUpdate(f_loc)
+                
+                self.logger.print_log("UPDATED %s" % f_loc.name)
+                continue
+            
+            # 파일 내용이 변경되었으면 삭제 후 다시 다운로드
+            elif d["md5"] != f_loc.md5:
+                # 파일 삭제
+                
+                self.filelist.serverUpdate(f_loc)
+                os.remove(f_loc.real_path)
+                self.filelist.serverUpdate(f_loc)
+
+                # 파일 다운로드
+                self.filelist.serverUpdate(f_loc)
+                asyncio.run(self.api.downloadFile(f_loc.id))
+                self.filelist.serverUpdate(f_loc)
+                
+                self.logger.print_log("UPDATED %s" % f_loc.name)
+                continue
+            
+            # 파일 경로(파일 이름) 변경 시 업데이트
+            elif Path(d["path"]) != f_loc.sync_path:
+                r_src_path_str = str(f_loc.real_path)
+                r_dest_path_str = str(self.filelist.getRealPath(d["path"]))
+
+                # 파일 경로 업데이트
+                self.filelist.serverUpdate(f_loc)
+                shutil.move(r_src_path_str, r_dest_path_str)
+                self.filelist.serverUpdate(f_loc)
+                
+                self.logger.print_log("UPDATED %s" % f_loc.name)
+                continue
+            
     def setObserver(self, target):
         observer = Observer()
         observer.schedule(self, target, recursive=True)
@@ -94,11 +149,13 @@ class FileChecker(RegexMatchingEventHandler):
         
         if self.filelist.search(event.src_path):
             return
+        
         f = self.filelist.append(event.src_path)
-        self.logger.print_log("FILE '%s' CREATED AT '%s'" % (f.name, f.dir))
-        asyncio.run(self.api.createFile(f))
-        asyncio.run(self.api.uploadFile(f))
-        # socket file created
+        
+        if not f.serverUpdating:
+            self.logger.print_log("FILE '%s' CREATED AT '%s'" % (f.name, f.dir))
+            asyncio.run(self.api.createFile(f))
+            asyncio.run(self.api.uploadFile(f))
         
     def on_moved(self, event):
         f = self.filelist.move(event.src_path, event.dest_path)
@@ -106,9 +163,9 @@ class FileChecker(RegexMatchingEventHandler):
             self.logger.print_log("MOVE ERROR : %s TO %s" % (event.src_path, event.dest_path))
             return
         else:
-            self.logger.print_log("FILE '%s' MOVED \n%sFROM %s \n%sTO%s" % (f.name, " "*21, re.sub(self.target, "Root", event.src_path), " "*21, re.sub(self.target, "Root", event.dest_path)))
-            asyncio.run(self.api.modifyFile(f))
-            # socket file moved
+            if not f.serverUpdating:
+                self.logger.print_log("FILE '%s' MOVED \n%sFROM %s \n%sTO%s" % (f.name, " "*21, re.sub(self.target, "Root", event.src_path), " "*21, re.sub(self.target, "Root", event.dest_path)))
+                asyncio.run(self.api.modifyFile(f))
     
     def on_deleted(self, event):
         if event.is_directory:
@@ -118,32 +175,34 @@ class FileChecker(RegexMatchingEventHandler):
                 return
             else:
                 for f in fs:
-                    self.logger.print_log("FILE '%s' DELETED FROM '%s'" % (f.name, f.dir))
-                    asyncio.run(self.api.deleteFile(f))
-                    del f
-                # socket Delete fs lists
+                    if not f.serverUpdating:
+                        self.logger.print_log("FILE '%s' DELETED FROM '%s'" % (f.name, f.dir))
+                        asyncio.run(self.api.deleteFile(f))
+                        del f
         else:
             f = self.filelist.del_file(event.src_path)
             if f == -1:
                 self.logger.print_log("DELETE FILE ERROR : %s" % event.src_path)
                 return
             else:
-                self.logger.print_log("FILE '%s' DELETED FROM %s" % (f.name, f.dir))
-                asyncio.run(self.api.deleteFile(f))
-                del f
-                # socket Delete f
+                if not f.serverUpdating:
+                    self.logger.print_log("FILE '%s' DELETED FROM %s" % (f.name, f.dir))
+                    asyncio.run(self.api.deleteFile(f))
+                    del f
         
     def on_modified(self, event):
         if event.is_directory:
             return
         f = self.filelist.modify(event.src_path)
+        
         if f == -1:
             self.logger.print_log("MODIFY ERROR")
             return
         elif f == 0:
             return
         else:
-            asyncio.run(self.api.modifyFile(f[1]))
-            asyncio.run(self.api.uploadFile(f[1]))
-            self.logger.print_log("File '%s' Modified %d bytes to %d bytes" % (f[1].name, f[0].size, f[1].size)) 
-            del f[0]        
+            if not f.serverUpdating:
+                asyncio.run(self.api.modifyFile(f[1]))
+                asyncio.run(self.api.uploadFile(f[1]))
+                self.logger.print_log("File '%s' Modified %d bytes to %d bytes" % (f[1].name, f[0].size, f[1].size)) 
+                del f[0]        

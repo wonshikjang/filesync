@@ -100,5 +100,5 @@ class App:
 
 if __name__ == '__main__':
     app = App()
-    #app.window.after(0, app.run)
-    #app.window.mainloop()
+    # app.window.after(0, app.run)
+    # app.window.mainloop()

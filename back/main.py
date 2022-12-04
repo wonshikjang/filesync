@@ -17,8 +17,6 @@ from database import engine
 from database import SessionLocal
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi_socketio import SocketManager
-# import nest_asyncio
-# nest_asyncio.apply()
 
 model.Base.metadata.create_all(bind=engine)
 
@@ -43,11 +41,11 @@ def get_db():
     finally:
         db.close()
 
-@app.post( "/", name="file data 생성",response_model= schema.ReadFileData)
+@app.post( "/", name="file data 생성",response_model = schema.ReadFileData)
 async def create_file_data(req: schema.BaseFileData, db: Session = Depends(get_db)):
     return crud.create_record(db, req)
 
-@app.get("/list", name ="file data list 조회", response_model= list[schema.ReadFileData])
+@app.get("/list", name ="file data list 조회", response_model = list[schema.ReadFileData])
 async def read_file_data_list(db: Session = Depends(get_db)):
     db_list = crud.get_list(db)
     return db_list
@@ -123,28 +121,45 @@ class ConnectionManager:
         await websocket.accept()
         self.active_connections.append(websocket)
 
+    def print_connections(self):
+        print("SERVER WATCHING : \n[")
+        for active in self.active_connections:    
+            print("    ", active.client)
+        print("]")
+    
     def disconnect(self, websocket: WebSocket):
         self.active_connections.remove(websocket)
+        print("Distconnect", websocket.client)
 
     async def send_personal_message(self, message: str, websocket: WebSocket):
         await websocket.send_text(message)
 
-    async def broadcast(self, message: str):
+    async def broadcast(self, db_list: [schema.BaseFileData]):
         for connection in self.active_connections:
-            await connection.send_text(message)
+            d_list = []
+            for m in db_list:
+                d = { "id":m.id,  "name":m.name, "path":m.path, "md5":m.md5 }
+                d_list.append(d)
+            j_list = json.dumps(d_list, indent=2)
+            await connection.send_json(j_list)
+
+manager = ConnectionManager()
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    manager = ConnectionManager()
     await manager.connect(websocket)
-    
-    while True:
-        try:
-            print("hlhl")
-            time.sleep(10)
-            data = await websocket.receive_text()
-            await manager.send_personal_message(f"You wrote: ", websocket)
-            await manager.broadcast(f"Client #{websocket.client} says: ")
-        except WebSocketDisconnect:
-            manager.disconnect(websocket)
-            await manager.broadcast(f"Client #{websocket.client} left the chat")
+    try:
+        while True:
+            # DB Update
+            db = SessionLocal()
+            # 5초마다 broadcasting
+            await manager.broadcast(crud.get_list(db))
+            # print connections
+            manager.print_connections()
+            # DB Close
+            db.close()
+            await asyncio.sleep(5)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+    except websockets.ConnectionClosed:
+        manager.disconnect(websocket)

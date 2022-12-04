@@ -1,5 +1,8 @@
 import os
 import time
+import json
+import asyncio
+from pathlib import Path
 try:
     import aiohttp
     import aiofiles
@@ -32,25 +35,25 @@ class API():
         fileJson = { "id": str(file.id), "name": file.name, "path": str(file.sync_path.as_posix()), "md5": file.md5 }
         async with aiohttp.ClientSession() as session:
             async with session.post(self._url("/"), json=fileJson) as res:
-                self.logger.print_log_server("RES HTTP/1.1 %s" % res.status, res, await res.text())
+                self.logger.print_log_server("CREATE FILE", "RES HTTP/1.1 %s" % res.status, await res.text())
     
     async def modifyFile(self, file):
         fileJson = { "id": str(file.id), "name": file.name, "path": str(file.sync_path.as_posix()), "md5": file.md5 }
         async with aiohttp.ClientSession() as session:
             async with session.put(self._url("/%s" % str(file.id)), json=fileJson) as res:
-                self.logger.print_log_server("RES HTTP/1.1 %s" % res.status, res, await res.json())
+                self.logger.print_log_server("MODIFIY FILE", "RES HTTP/1.1 %s" % res.status, await res.json())
             
     async def deleteFile(self, file):
         async with aiohttp.ClientSession() as session:
             async with session.delete(self._url("/%s" % str(file.id))) as res:
-                self.logger.print_log_server("RES HTTP/1.1 %s" % res.status, res, await res.text())
+                self.logger.print_log_server("DELETE FILE", "RES HTTP/1.1 %s" % res.status, await res.text())
                 
     async def uploadFile(self, file):
         file_to_send = aiohttp.FormData()
         file_to_send.add_field('file', open(file.real_path, 'rb'), filename="%s.%s" % (str(file.id),file.name.split(".")[-1]), content_type="multipart/form-data")
         async with aiohttp.ClientSession() as session:
             async with session.post(self._url("/file"), data=file_to_send) as res:
-                self.logger.print_log_server("RES HTTP/1.1 %s" % res.status, res, await res.text())
+                self.logger.print_log_server("UPLOAD FILE", "RES HTTP/1.1 %s" % res.status, await res.text())
                 
     async def downloadFile(self, file_id):
         async with aiohttp.ClientSession() as session:
@@ -60,18 +63,19 @@ class API():
                 url = "%s/static/%s.%s" % (self.url, f["id"], f["name"].split(".")[-1])
             async with session.get(url) as res:
                     if res.status == 200:
-                        _f = await aiofiles.open("%s/%s" % (self.target, f["path"][5:]), mode='wb')
+                        tmp_path = Path(self.target) / f["path"][5:]
+                        if not tmp_path.parent.is_dir():
+                            tmp_path.parent.mkdir()
+                        _f = await aiofiles.open(str(tmp_path.resolve()), mode='wb')
                         await _f.write(await res.read())
                         await _f.close()
                 
-    async def connectSocket(self):
+    async def connectSocket(self, fileChecker):
         async with aiohttp.ClientSession() as session:     
             async with session.ws_connect(self._url("/ws")) as ws:
                 while True:
-                    await ws.send_str("Hello world!")
-                    print(await ws.receive_str())
-                    print(await ws.receive_str())
-                    print(ws)
-                    time.sleep(10)
+                    # 5초마다 오는 전체 파일 확인
+                    filelist = await ws.receive_json()
+                    fileChecker.socketDataCheck(json.loads(filelist))
                     
         
