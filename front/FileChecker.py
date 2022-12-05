@@ -28,9 +28,10 @@ class FileChecker(RegexMatchingEventHandler):
         # initial file sync
         self.syncToServer(self.findToUpdate())
 
-    def reset_set_path(self, target, config):
-        self.config = config
+    def reset_set_path(self, target):
         self.target = target
+        self.filelist.updateTarget(target)
+        self.api.target = target
         self.observer = self.setObserver(self.target)
         self.syncToServer(self.findToUpdate())
 
@@ -90,6 +91,17 @@ class FileChecker(RegexMatchingEventHandler):
         self.observer.start()
     
     async def socketDataCheck(self, d_list):
+        for (path, dir, file) in os.walk(self.target):
+            for d in dir:
+                try:
+                    if os.path.exists("%s/.DS_Store" % path):
+                        os.remove("%s/.DS_Store" % path)
+                    os.rmdir("%s/%s" % (path, d))
+                except:
+                    continue
+        
+        
+        self.d_list = d_list
         
         need_update = asyncio.run(self.api.getFileList())
         print("---socket HTtp---")
@@ -107,33 +119,50 @@ class FileChecker(RegexMatchingEventHandler):
         for f_loc in invalid:
             self.filelist.serverUpdate(f_loc)
             os.remove(f_loc.real_path)
+            self.filelist.serverUpdate(f_loc)
             self.filelist.del_file(f_loc.real_path)
             self.logger.print_log("DELETED %s" % f_loc.name)
 
+        for d in d_list:
+            f_loc = self.filelist.search_id(d["id"])
+        
+            # 파일이 존재하지 않으면 생성
+            if not f_loc:
+                # 파일 다운로드
+                # 임시 파일 생성 시 # 옵저버에서 컷
+                print("🤬", str(self.filelist.getRealPath(d["path"])))
+                f = self.filelist.append_tmp(str(self.filelist.getRealPath(d["path"])))
+                self.logger.print_log("DOWONLOADING...🤬")
+                asyncio.run(self.api.downloadFile(d["id"]))
+                # f.wait_and_check()
+                
+            elif d["md5"] != f_loc.md5:
+                self.filelist.serverUpdate(f_loc)
+                os.remove(f_loc.real_path)
+                self.filelist.serverUpdate(f_loc)
+                f = self.filelist.append_tmp(str(self.filelist.getRealPath(d["path"])))
+                asyncio.run(self.api.downloadFile(f_loc.id))
+                self.logger.print_log("UPDATED %s" % f_loc.name)
+                
+            elif Path(d["path"]) != f_loc.sync_path:
+                r_src_path_str = str(f_loc.real_path)
+                r_dest_path_str = str(self.filelist.getRealPath(d["path"]))
 
-        # for d in d_list:
-        #     f_loc = self.filelist.search_id(d["id"])
-            
-        #     # 파일이 존재하지 않으면 생성
-        #     if not f_loc:
-        #         # 파일 다운로드
-        #         f = self.filelist.append(str(self.filelist.getRealPath(d["path"])))
-        #         f.id = d["id"]
-        #         self.filelist.serverUpdate(f)
-        #         asyncio.run(self.api.downloadFile(d["id"]))
-        #         self.filelist.serverUpdate(f)
-        #         print(self.filelist)
-        #         print(d_list)                
-        #         self.logger.print_log("CREATED %s" % d["name"])
-        #         continue
-            
+                print("😈", r_src_path_str)
+                print("😈", r_dest_path_str)
+                
+                self.filelist.serverUpdate(f_loc)
+                os.makedirs(self.filelist.getDirPath(self.filelist.getRealPath(d["path"])), exist_ok=True)
+                time.sleep(0.5)
+                shutil.move(r_src_path_str, r_dest_path_str)
+                self.filelist.del_file(f_loc.real_path)
+                self.filelist.serverUpdate(f_loc)
+                
+                self.logger.print_log("MOVED %s" % f_loc.name)
             # # 파일 내용이 변경되었으면 삭제 후 다시 다운로드
             # elif d["md5"] != f_loc.md5:
             #     # 파일 삭제
                 
-            #     self.filelist.serverUpdate(f_loc)
-            #     os.remove(f_loc.real_path)
-            #     self.filelist.serverUpdate(f_loc)
 
             #     # 파일 다운로드
             #     self.filelist.serverUpdate(f_loc)
@@ -143,13 +172,17 @@ class FileChecker(RegexMatchingEventHandler):
             #     self.logger.print_log("UPDATED %s" % f_loc.name)
             #     continue
             
-            # # 파일 경로(파일 이름) 변경 시 업데이트
             # elif Path(d["path"]) != f_loc.sync_path:
+                
+            # # # 파일 경로(파일 이름) 변경 시 업데이트
+            # # elif Path(d["path"]) != f_loc.sync_path:
             #     r_src_path_str = str(f_loc.real_path)
             #     r_dest_path_str = str(self.filelist.getRealPath(d["path"]))
 
-            #     # 파일 경로 업데이트
+            # #     # 파일 경로 업데이트
             #     self.filelist.serverUpdate(f_loc)
+            #     os.makedirs(self.filelist.getDirPath(self.filelist.getRealPath(d["path"])), exist_ok=True)
+            #     time.sleep(0.5)
             #     shutil.move(r_src_path_str, r_dest_path_str)
             #     self.filelist.serverUpdate(f_loc)
                 
@@ -173,16 +206,26 @@ class FileChecker(RegexMatchingEventHandler):
         print("😡 on created", event.src_path)
         
         # 터미널 서 파일 생성 시 .파일이름.txt.swt? 무시
-        if re.match(f"{self.target}/.*?\.txt\.[a-zA-Z0-9-]+", str(event.src_path)):
+        if re.match(f"{self.target}/.*?\.txt\.[a-zA-Z0-9-~]+", str(event.src_path)):
+            print("first")
             print(event.src_path)
-            return 
+            return
+        
+        # if re.match(f"{self.target}/[a-zA-Z0-9-~]+", str(event.src_path)):
+        #     print("second")
+        #     print(event.src_path)
+        #     return 
         
         # 이미 해당 경로에 파일이 존재하면 무시
-        if self.filelist.search(event.src_path):
-            f = open(event.src_path, 'r')
-            print(f.read())
-            f.close()
-            return
+        f = self.filelist.search(event.src_path) 
+        if f:
+            if f.md5 == None or f.size == None:
+                f.md5 = f.makeMd5(event.src_path)
+                f.size = Path(event.src_path).stat().st_size
+                print("🤩 updated! md5 and size")
+                return
+            else:
+                return
             
         f = self.filelist.append(event.src_path)
         
@@ -198,9 +241,9 @@ class FileChecker(RegexMatchingEventHandler):
         if re.match(f"{self.target}/.*?\.txt\.[a-zA-Z0-9-]+", str(event.dest_path)):
             print(event.dest_path)
             return
-        elif re.match(f"{self.target}/.*?\.txt\.[a-zA-Z0-9-]+", str(event.src_path)):
-            print(event.src_path)
-            return 
+        # elif re.match(f"{self.target}/.*?\.txt\.[a-zA-Z0-9-]+", str(event.src_path)):
+        #     print(event.src_path)
+        #     return 
         
         f = self.filelist.move(event.src_path, event.dest_path)
         if f == -1:

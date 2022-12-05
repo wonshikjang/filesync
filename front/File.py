@@ -1,6 +1,8 @@
 import uuid
 import hashlib
 import re
+import time
+import asyncio
 from pathlib import Path
 from Error import AlreadyChecked
 
@@ -18,6 +20,11 @@ class FileList():
         file_list += "\n]"
         return file_list
     
+    def updateTarget(self, target):
+        self.target = target
+        for file in self.fileList:
+            file.target = target
+    
     def search(self, path):
         for f in self.fileList:
             if f.real_path.resolve() == Path(path).resolve():
@@ -33,6 +40,9 @@ class FileList():
     def getRealPath(self, sync_path):
         return Path(sync_path.replace("Root", str(self.target)))
     
+    def getDirPath(self, real_path):
+        return Path(real_path).parent
+    
     def updateId(self, d_list):
         invalid = []
         for file in self.fileList:
@@ -44,6 +54,10 @@ class FileList():
                     file.id = d["id"]
                     valid = True
                     break
+                else:
+                    if file.id == d["id"]:
+                        valid = True
+                        break
             if not valid:
                 invalid.append(file)
                 print("append file")
@@ -77,10 +91,20 @@ class FileList():
     
     def append(self, path):
         print("😀file append", path)
+        if self.search(path):
+            return -1
         f = File(self.target, str(Path(path)))
         self.fileList.append(f)
         return f
-                
+    
+    def append_tmp(self, path):
+        print("😀file append_tmp", path)
+        if self.search(path):
+            return -1
+        f = File(self.target, str(Path(path)), True)
+        self.fileList.append(f)
+        return f
+                        
     def move(self, src, dest):
         print("😀file move", src, "to", dest)
         for file in self.fileList:
@@ -136,16 +160,20 @@ class FileList():
         return -1
     
 class File():
-    def __init__(self, _target, _path): # target 경로, 파일 실제 경로
+    def __init__(self, _target, _path, _wait=None): # target 경로, 파일 실제 경로
         self.id = uuid.uuid4()
         self.target = Path(_target) # target 경로
         self.real_path = Path(_path) # 파일 실제 경로
         self.name = self.real_path.name # 파일 이름
         self.sync_path = Path(str(self.real_path).replace(str(self.target), "Root"))
         self.dir = self.sync_path.parent # 파일 가상 디렉토리
-        self.size = self.real_path.stat().st_size
-        self.md5 = self.makeMd5(_path)
         self.serverUpdating = False
+        if _wait:
+            self.size = None
+            self.md5 = None
+        else:
+            self.size = self.real_path.stat().st_size
+            self.md5 = self.makeMd5(_path)
     
     def __del__(self):
         pass
@@ -171,7 +199,7 @@ class File():
         f.size = self.size
         f.md5 = self.md5
         return f
-        
+    
     def makeMd5(self, path):
         temp_path = Path(path).resolve()
         try:

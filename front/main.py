@@ -85,13 +85,14 @@ class App:
                 self.target = tkinter.filedialog.askdirectory(title='Select sync path')
             self.config.setConfig("CLIENT_CONFIG", "target_path", self.target)
             
+            
             self.observer.stop()
             self.observer.join()
 
             del self.observer
             # del self.fileChecker
             
-            self.fileChecker.reset_set_path(self.target, self.config)
+            self.fileChecker.reset_set_path(self.target)
             self.observer = self.fileChecker.observer
 
             self.logger.print_log("Changed sync folder to " + self.target)
