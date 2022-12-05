@@ -92,7 +92,6 @@ class App:
 
             del self.observer
             
-
             self.logger.print_log("")
             self.logger.print_log("")
             self.logger.print_log("---------------------------- ")
@@ -109,6 +108,7 @@ class App:
         # add some clean up...
         quit()
         
+        
     def openSockets(self):
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
@@ -121,7 +121,7 @@ class App:
 if __name__ == '__main__':
     app = App()
     
-    t = threading.Thread(target=app.openSockets)
+    t = threading.Thread(target=app.openSockets, daemon=True)
     t.start()
     
     app.window.mainloop()
