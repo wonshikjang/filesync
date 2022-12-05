@@ -78,14 +78,19 @@ class API():
     async def connectSocket(self, fileChecker):
         async with aiohttp.ClientSession() as session:     
             async with session.ws_connect(self._url("/ws")) as ws:
-                while True:
-                    # 5초마다 오는 전체 파일 확인
-                    try:
-                        filelist = await ws.receive_json()
-                        await fileChecker.socketDataCheck(json.loads(filelist))
-                    except TypeError:
-                        print("SOCKET DISCONNECTED")
-                        self.app.socketError = True
-                        break
-                    
-        
+                    while True:
+                        # 5초마다 오는 전체 파일 확인
+                        try:
+                            filelist = await ws.receive_json()
+                            # print("----socket comming DATA----")
+                            # print(filelist)
+                            await fileChecker.socketDataCheck(json.loads(filelist))
+                        except TypeError as e:
+                            print(e)
+                            print("SOCKET DISCONNECTED")
+                            self.app.socketError = True
+                            await ws.close()
+                            break
+                        
+                        
+            

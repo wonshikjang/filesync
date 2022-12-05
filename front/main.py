@@ -42,7 +42,7 @@ class App:
         # app setting
         self.logger = Logger.Logger(self)
         self.config = Config()
-        self.loop = asyncio.new_event_loop()
+        # self.loop = asyncio.new_event_loop()
         self.socketError = False
 
         self.target = self.checkFirstExec()
@@ -89,9 +89,9 @@ class App:
             self.observer.join()
 
             del self.observer
-            del self.fileChecker
+            # del self.fileChecker
             
-            self.fileChecker = self.createFileChecker()
+            self.fileChecker.reset_set_path(self.target, self.config)
             self.observer = self.fileChecker.observer
 
             self.logger.print_log("Changed sync folder to " + self.target)
@@ -111,15 +111,13 @@ class App:
         self.window.after(5000, self.show_log)
         
     def openSockets(self):
-        try:
-            asyncio.set_event_loop(self.loop)
-            asyncio.get_event_loop().run_until_complete(self.fileChecker.api.connectSocket(self.fileChecker));
-            asyncio.get_event_loop().run_forever();
-        except:
-            self.loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(self.loop)
-            asyncio.get_event_loop().run_until_complete(self.fileChecker.api.connectSocket(self.fileChecker));
-            asyncio.get_event_loop().run_forever();
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
+        asyncio.get_event_loop().run_until_complete(self.fileChecker.api.connectSocket(self.fileChecker));
+        asyncio.get_event_loop().run_forever();
+        
+    def socketDisconnect(self):
+        self.fileChecker.socketDisconnect()
             
 if __name__ == '__main__':
     app = App()
@@ -127,7 +125,7 @@ if __name__ == '__main__':
     t = threading.Thread(target=app.openSockets)
     t.start()
     
-    app.show_log()
+    # app.show_log()
     app.window.mainloop()
     
     

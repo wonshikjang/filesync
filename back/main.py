@@ -131,9 +131,14 @@ class ConnectionManager:
         self.active_connections.remove(websocket)
         print("Distconnect", websocket.client)
 
-    async def send_personal_message(self, message: str, websocket: WebSocket):
-        await websocket.send_text(message)
-
+    async def send_personal_message(self, websocket: WebSocket, db_list: [schema.BaseFileData]):
+        d_list = []
+        for m in db_list:
+            d = { "id":m.id,  "name":m.name, "path":m.path, "md5":m.md5 }
+            d_list.append(d)
+        j_list = json.dumps(d_list, indent=2)
+        await websocket.send_json(j_list)
+        
     async def broadcast(self, db_list: [schema.BaseFileData]):
         for connection in self.active_connections:
             d_list = []
@@ -150,15 +155,16 @@ async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
         while True:
+            await asyncio.sleep(5)
             # DB Update
             db = SessionLocal()
             # 5초마다 broadcasting
-            await manager.broadcast(crud.get_list(db))
+            # await manager.broadcast(crud.get_list(db))
+            await manager.send_personal_message(websocket, crud.get_list(db))
             # print connections
             manager.print_connections()
             # DB Close
             db.close()
-            await asyncio.sleep(5)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
     except websockets.ConnectionClosed:

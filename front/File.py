@@ -33,17 +33,37 @@ class FileList():
     def getRealPath(self, sync_path):
         return Path(sync_path.replace("Root", str(self.target)))
     
-    def checkInvalid(self, d_list):
+    def updateId(self, d_list):
         invalid = []
         for file in self.fileList:
-            try:
-                for d in d_list:
-                    if d["id"] == str(file.id):
-                        raise AlreadyChecked("Valid")
+            valid = False
+            for d in d_list:
+                print(d["path"])
+                print(str(file.sync_path))
+                if str(file.sync_path) == d["path"]:
+                    file.id = d["id"]
+                    valid = True
+                    break
+            if not valid:
                 invalid.append(file)
-            except AlreadyChecked:
-                continue
+                print("append file")
         return invalid
+    
+    # def checkInvalid(self, d_list):
+    #     invalid = []
+    #     for file in self.fileList:
+    #         try:
+    #             for d in d_list:
+    #                 if d["id"] == str(file.id):
+    #                     raise AlreadyChecked("Valid")
+    #             invalid.append(file)
+    #         except AlreadyChecked:
+    #             continue
+    #     return invalid
+    
+    def freeServerUpdate(self):
+        for file in self.fileList:
+            file.serverUpdating = False
             
     def pop(self, path=None):
         if path:
@@ -56,11 +76,13 @@ class FileList():
             return self.fileList.pop()
     
     def append(self, path):
+        print("😀file append", path)
         f = File(self.target, str(Path(path)))
         self.fileList.append(f)
         return f
                 
     def move(self, src, dest):
+        print("😀file move", src, "to", dest)
         for file in self.fileList:
             if file.real_path.resolve() == Path(src).resolve():
                 file.move(dest)
@@ -71,11 +93,11 @@ class FileList():
         for file in self.fileList:
             if file.real_path.resolve() == Path(path).resolve():
                 file_before = file.copy()
-                file.modify(path)
-                if file.md5 == file_before.md5:
+                if file.makeMd5(path) == file_before.md5:
                     del file_before
                     return 0
                 else:
+                    file.modify(path)
                     return [file_before, file]
         return -1
     
@@ -88,6 +110,7 @@ class FileList():
                     file.serverUpdating = not file.serverUpdating
     
     def del_dir(self, path): # delete Directory
+        print("😀del direcotry", path)
         del_files = []
         i = len(self.fileList)
         while i > 0:
@@ -101,10 +124,15 @@ class FileList():
         return del_files
     
     def del_file(self, path): # delete File
+        print("😀del file", path)
         for file in self.fileList:
             if file.real_path.resolve() == Path(path).resolve():
-                self.fileList.remove(file)
-                return file
+                if file.serverUpdating:
+                    print("😀socket updating file no delete")
+                    return 0
+                else:
+                    self.fileList.remove(file)
+                    return file
         return -1
     
 class File():
