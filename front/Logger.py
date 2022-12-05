@@ -9,7 +9,7 @@ class Logger:
     def print_log(self, text):
         logging.info(text)
         self.gui.text_print("[" + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "] "+ text)
-
+        
     def print_log_server(self, type, status, data):
         logging.info("-------- HTTP --------")
         if type:

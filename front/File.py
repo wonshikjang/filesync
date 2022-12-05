@@ -13,6 +13,8 @@ class FileList():
         # 서버에서 총 파일 리스트 업데이트
     
     def __str__(self):
+        if len(self.fileList) == 0:
+            return "[]"
         file_list = "[\n"
         for file in self.fileList:
             file_list += file.__str__()
@@ -48,8 +50,6 @@ class FileList():
         for file in self.fileList:
             valid = False
             for d in d_list:
-                print(d["path"])
-                print(str(file.sync_path))
                 if str(file.sync_path) == d["path"]:
                     file.id = d["id"]
                     valid = True
@@ -60,20 +60,7 @@ class FileList():
                         break
             if not valid:
                 invalid.append(file)
-                print("append file")
         return invalid
-    
-    # def checkInvalid(self, d_list):
-    #     invalid = []
-    #     for file in self.fileList:
-    #         try:
-    #             for d in d_list:
-    #                 if d["id"] == str(file.id):
-    #                     raise AlreadyChecked("Valid")
-    #             invalid.append(file)
-    #         except AlreadyChecked:
-    #             continue
-    #     return invalid
     
     def freeServerUpdate(self):
         for file in self.fileList:
@@ -90,7 +77,7 @@ class FileList():
             return self.fileList.pop()
     
     def append(self, path):
-        print("😀file append", path)
+        # print("😀file append", path)
         if self.search(path):
             return -1
         f = File(self.target, str(Path(path)))
@@ -98,7 +85,7 @@ class FileList():
         return f
     
     def append_tmp(self, path):
-        print("😀file append_tmp", path)
+        # print("😀file append_tmp", path)
         if self.search(path):
             return -1
         f = File(self.target, str(Path(path)), True)
@@ -106,7 +93,7 @@ class FileList():
         return f
                         
     def move(self, src, dest):
-        print("😀file move", src, "to", dest)
+        # print("😀file move", src, "to", dest)
         for file in self.fileList:
             if file.real_path.resolve() == Path(src).resolve():
                 file.move(dest)
@@ -134,7 +121,7 @@ class FileList():
                     file.serverUpdating = not file.serverUpdating
     
     def del_dir(self, path): # delete Directory
-        print("😀del direcotry", path)
+        # print("😀del direcotry", path)
         del_files = []
         i = len(self.fileList)
         while i > 0:
@@ -148,11 +135,11 @@ class FileList():
         return del_files
     
     def del_file(self, path): # delete File
-        print("😀del file", path)
+        # print("😀del file", path)
         for file in self.fileList:
             if file.real_path.resolve() == Path(path).resolve():
                 if file.serverUpdating:
-                    print("😀socket updating file no delete")
+                    # print("😀socket updating file no delete")
                     return 0
                 else:
                     self.fileList.remove(file)
@@ -179,7 +166,7 @@ class File():
         pass
     
     def __str__(self):
-        return "File : { \n\tid : %s, \n\tname : %s, \n\ttarget : %s, \n\tpath : %s, \n\tsize : %d, \n\tmd5 : %s \n}" % (self.id, self.name, self.target, self.sync_path, self.size, self.md5)
+        return "    { \n    id : %s, \n    name : %s, \n    target : %s, \n    path : %s, \n    size : %d, \n    md5 : %s \n}" % (self.id, self.name, self.target, self.sync_path, self.size, self.md5)
     
     def modify(self, path):
         temp_path = Path(path)

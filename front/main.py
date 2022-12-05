@@ -49,11 +49,12 @@ class App:
         while not os.path.isdir(self.target):
             self.target = tkinter.filedialog.askdirectory(title='Select sync path')
         self.config.setConfig("CLIENT_CONFIG", "target_path", self.target)
-        self.logger.print_log("Target path : " + self.target)
+        self.logger.print_log("----------------- ")
+        self.logger.print_log("(APP) TARGET PATH : " + self.target)
+        self.logger.print_log("----------------- ")
 
         self.fileChecker = self.createFileChecker()
         self.observer = self.fileChecker.observer
-        # self.observer.start()
         
     def checkFirstExec(self):
         try:
@@ -90,26 +91,23 @@ class App:
             self.observer.join()
 
             del self.observer
-            # del self.fileChecker
             
+
+            self.logger.print_log("")
+            self.logger.print_log("")
+            self.logger.print_log("---------------------------- ")
+            self.logger.print_log("(APP) CHANGED SYNC FOLDER TO " + self.target)
+            self.logger.print_log("---------------------------- ")
             self.fileChecker.reset_set_path(self.target)
             self.observer = self.fileChecker.observer
-
-            self.logger.print_log("Changed sync folder to " + self.target)
         except RuntimeError as e:
-            print(e)
+            self.logger.print_log("SET_PATH RUNTIME ERROR " + e)
 
     def set_exit(self):
         self.observer.stop()
         self.observer.join()
         # add some clean up...
         quit()
-        
-    def show_log(self):
-        if self.socketError:
-            quit()
-        self.logger.print_log("WATCHING FILE CHANGED...")
-        self.window.after(5000, self.show_log)
         
     def openSockets(self):
         self.loop = asyncio.new_event_loop()
@@ -126,7 +124,6 @@ if __name__ == '__main__':
     t = threading.Thread(target=app.openSockets)
     t.start()
     
-    # app.show_log()
     app.window.mainloop()
     
     
