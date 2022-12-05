@@ -4,6 +4,10 @@ from FileChecker import FileChecker
 from config.Config import Config
 import mttkinter as tkinter
 import tkinter.filedialog
+import asyncio
+import threading
+import nest_asyncio
+nest_asyncio.apply()
 
 class App:
     def __init__(self):
@@ -38,6 +42,8 @@ class App:
         # app setting
         self.logger = Logger.Logger(self)
         self.config = Config()
+        self.loop = asyncio.new_event_loop()
+        self.socketError = False
 
         self.target = self.checkFirstExec()
         while not os.path.isdir(self.target):
@@ -60,11 +66,7 @@ class App:
         return target
     
     def createFileChecker(self):
-        return FileChecker(self.target, self.logger, self.config)
-    
-    def run(self):
-        self.logger.print_log("WATCHING FILE CHANGED...")
-        self.window.after(10000, self.run)
+        return FileChecker(self, self.target, self.logger, self.config)
     
     def text_print(self, text):
         self.text_terminal.insert(tkinter.END, text+"\n")
@@ -77,28 +79,55 @@ class App:
         self.config.setConfig("CLIENT_CONFIG", "port", port)
 
     def set_path(self):
-        self.target = tkinter.filedialog.askdirectory(initialdir=self.target, title='Select sync path')
-        while not os.path.isdir(self.target):
-            self.target = tkinter.filedialog.askdirectory(title='Select sync path')
-        self.config.setConfig("CLIENT_CONFIG", "target_path", self.target)
-        self.observer.stop()
-        self.observer.join()
+        try:
+            self.target = tkinter.filedialog.askdirectory(initialdir=self.target, title='Select sync path')
+            while not os.path.isdir(self.target):
+                self.target = tkinter.filedialog.askdirectory(title='Select sync path')
+            self.config.setConfig("CLIENT_CONFIG", "target_path", self.target)
+            
+            self.observer.stop()
+            self.observer.join()
 
-        del self.observer
-        del self.fileChecker
+            del self.observer
+            del self.fileChecker
+            
+            self.fileChecker = self.createFileChecker()
+            self.observer = self.fileChecker.observer
 
-        self.fileChecker = self.createFileChecker()
-        self.observer = self.fileChecker.observer
-        self.observer.start()
-        self.logger.print_log("Changed sync folder to " + self.target)
+            self.logger.print_log("Changed sync folder to " + self.target)
+        except RuntimeError as e:
+            print(e)
 
     def set_exit(self):
         self.observer.stop()
         self.observer.join()
         # add some clean up...
         quit()
-
+        
+    def show_log(self):
+        if self.socketError:
+            quit()
+        self.logger.print_log("WATCHING FILE CHANGED...")
+        self.window.after(5000, self.show_log)
+        
+    def openSockets(self):
+        try:
+            asyncio.set_event_loop(self.loop)
+            asyncio.get_event_loop().run_until_complete(self.fileChecker.api.connectSocket(self.fileChecker));
+            asyncio.get_event_loop().run_forever();
+        except:
+            self.loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.loop)
+            asyncio.get_event_loop().run_until_complete(self.fileChecker.api.connectSocket(self.fileChecker));
+            asyncio.get_event_loop().run_forever();
+            
 if __name__ == '__main__':
     app = App()
-    # app.window.after(0, app.run)
-    # app.window.mainloop()
+    
+    t = threading.Thread(target=app.openSockets)
+    t.start()
+    
+    app.show_log()
+    app.window.mainloop()
+    
+    

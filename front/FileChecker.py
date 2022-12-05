@@ -16,20 +16,16 @@ except ModuleNotFoundError as e:
     os.system("pip install watchdog")
 
 class FileChecker(RegexMatchingEventHandler):
-    def __init__(self, _target, _logger, _config):
+    def __init__(self, app, _target, _logger, _config):
         super().__init__(None, [".*\.py",".*\.pyc",".*\.ini", ".*\.DS\_Store", ".*thumbs\.db"], False, False)
         self.target = _target
         self.filelist = FileList(self.target)
         self.logger = _logger
         self.config = _config
-        self.api = API(self.config, self.logger)
+        self.api = API(app, self.config, self.logger)
         self.observer = self.setObserver(self.target)
         # initial file sync
         self.syncToServer(self.findToUpdate())
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        asyncio.get_event_loop().run_until_complete(self.api.connectSocket(self));
-        asyncio.get_event_loop().run_forever();
 
     def findToUpdate(self):
         self.logger.print_log("GETTING FILE DATAS FROM SERVER")
@@ -85,9 +81,9 @@ class FileChecker(RegexMatchingEventHandler):
         self.logger.print_log("SYNCHRONIZATION COMPLETE")
         self.observer.start()
     
-    def socketDataCheck(self, d_list):
-        self.logger.print_log("WATCHING FILE CHANGED...")
-        
+    async def socketDataCheck(self, d_list):
+        print(self.filelist)
+        # self.logger.print_log("WATCHING FILE CHANGED...")
         # loc에 존재하는 invalid파일들 삭제
         for f_loc in self.filelist.checkInvalid(d_list):
             # 파일 삭제
@@ -102,11 +98,14 @@ class FileChecker(RegexMatchingEventHandler):
             # 파일이 존재하지 않으면 생성
             if not f_loc:
                 # 파일 다운로드
-                self.filelist.serverUpdate(f_loc)
-                asyncio.run(self.api.downloadFile(f_loc.id))
-                self.filelist.serverUpdate(f_loc)
-                
-                self.logger.print_log("UPDATED %s" % f_loc.name)
+                f = self.filelist.append(str(self.filelist.getRealPath(d["path"])))
+                f.id = d["id"]
+                self.filelist.serverUpdate(f)
+                asyncio.run(self.api.downloadFile(d["id"]))
+                self.filelist.serverUpdate(f)
+                print(self.filelist)
+                print(d_list)                
+                self.logger.print_log("CREATED %s" % d["name"])
                 continue
             
             # 파일 내용이 변경되었으면 삭제 후 다시 다운로드
@@ -135,8 +134,9 @@ class FileChecker(RegexMatchingEventHandler):
                 shutil.move(r_src_path_str, r_dest_path_str)
                 self.filelist.serverUpdate(f_loc)
                 
-                self.logger.print_log("UPDATED %s" % f_loc.name)
+                self.logger.print_log("MOVED %s" % f_loc.name)
                 continue
+        
             
     def setObserver(self, target):
         observer = Observer()
@@ -171,7 +171,7 @@ class FileChecker(RegexMatchingEventHandler):
         if event.is_directory:
             fs = self.filelist.del_dir(event.src_path)
             if fs == []:
-                self.logger.print_log("DELETE EMPTY DIR :", event.src_path)
+                self.logger.print_log("DELETE EMPTY DIR : %s" % event.src_path)
                 return
             else:
                 for f in fs:
@@ -182,7 +182,7 @@ class FileChecker(RegexMatchingEventHandler):
         else:
             f = self.filelist.del_file(event.src_path)
             if f == -1:
-                self.logger.print_log("DELETE FILE ERROR : %s" % event.src_path)
+                # self.logger.print_log("DELETE FILE ERROR : %s" % event.src_path)
                 return
             else:
                 if not f.serverUpdating:

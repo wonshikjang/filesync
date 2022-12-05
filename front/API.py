@@ -2,6 +2,7 @@ import os
 import time
 import json
 import asyncio
+# from main import app
 from pathlib import Path
 try:
     import aiohttp
@@ -14,7 +15,8 @@ except ModuleNotFoundError as e:
     import aiofiles
     
 class API():
-    def __init__(self, config, logger):
+    def __init__(self, app, config, logger):
+        self.app = app
         self.config = config
         self.logger = logger
         self.server_ip = config.getConfig("CLIENT_CONFIG", "server_ip")
@@ -24,12 +26,15 @@ class API():
 
     def _url(self, url=""):
         return self.url + url
-
+    
     async def getFileList(self):
         async with aiohttp.ClientSession() as session:
             async with session.get(self._url("/list")) as res:
+                # try:
                 files = await res.json()
                 return files
+                # except:
+                    # self.logger.print_log("SERVER IS NOT READY")
 
     async def createFile(self, file):
         fileJson = { "id": str(file.id), "name": file.name, "path": str(file.sync_path.as_posix()), "md5": file.md5 }
@@ -75,7 +80,12 @@ class API():
             async with session.ws_connect(self._url("/ws")) as ws:
                 while True:
                     # 5초마다 오는 전체 파일 확인
-                    filelist = await ws.receive_json()
-                    fileChecker.socketDataCheck(json.loads(filelist))
+                    try:
+                        filelist = await ws.receive_json()
+                        await fileChecker.socketDataCheck(json.loads(filelist))
+                    except TypeError:
+                        print("SOCKET DISCONNECTED")
+                        self.app.socketError = True
+                        break
                     
         
