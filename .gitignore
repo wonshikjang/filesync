@@ -31,6 +31,8 @@
 .idea/**/gradle.xml
 .idea/**/libraries
 
+back/.idea/*
+
 # Gradle and Maven with auto-import
 # When using Gradle or Maven with auto-import, you should exclude module files,
 # since they will be recreated, and may cause churn.  Uncomment if using
@@ -302,6 +304,7 @@ poetry.toml
 
 # static files
 /back/static/*
+/back/.idea/*
 */secrets.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python,pycharm,visualstudiocode

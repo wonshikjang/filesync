@@ -117,6 +117,10 @@ class App:
         
     def socketDisconnect(self):
         self.fileChecker.socketDisconnect()
+        # self.observer.stop()
+        # self.observer.join()
+        # add some clean up...
+        # quit()
             
 if __name__ == '__main__':
     app = App()

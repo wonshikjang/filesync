@@ -62,11 +62,11 @@ class FileChecker(RegexMatchingEventHandler):
                             break
                     raise NeedToUpdated("NEED TO UPDATE %s" % f_loc.name)
                 except NeedToUpdated as e:
-                    self.logger.print_log("FIND_TO_UPDATE NEED_TO_BE_UPDATED ERROR " + str(e))
+                    self.logger.print_log(str(e))
                     os.remove(f_loc.real_path)
                     self.filelist.pop()
                 except AlreadyChecked as e:
-                    self.logger.print_log("FIND_TO_UPDATE ALREADY CHECKED EXCEPTION " + str(e))
+                    self.logger.print_log(str(e))
                     continue
             if os.path.exists("%s/.DS_Store" % path):
                 os.remove("%s/.DS_Store" % path)
@@ -106,10 +106,7 @@ class FileChecker(RegexMatchingEventHandler):
         
         # 파일 받아오기
         need_update = asyncio.run(self.api.getFileList())
-        # self.logger.print_log("---------------------------")
-        self.logger.print_log("(WATCHDOG) WATCHING FILE IS CHANGED...")
-        # self.logger.print_log("---------------------------")
-        # self.logger.print_log("")
+        self.logger.print_log("(WATCHDOG) WATCHING FILES...")
         print("----WEBSOCKETS DATALIST----")
         if len(d_list) == 0:
             print("[]")
@@ -134,7 +131,7 @@ class FileChecker(RegexMatchingEventHandler):
             os.remove(f_loc.real_path)
             self.filelist.serverUpdate(f_loc)
             self.filelist.del_file(f_loc.real_path)
-            self.logger.print_log("(WEBSOCKET) NOT VALID FILE : %s" % f_loc.name)
+            self.logger.print_log("(WEBSOCKET) FILE DELETED : %s" % f_loc.name)
 
         for d in d_list:
             f_loc = self.filelist.search_id(d["id"])
@@ -145,7 +142,7 @@ class FileChecker(RegexMatchingEventHandler):
                 # 임시 파일 생성 시 # 옵저버에서 컷
                 # print("🤬", str(self.filelist.getRealPath(d["path"])))
                 f = self.filelist.append_tmp(str(self.filelist.getRealPath(d["path"])))
-                self.logger.print_log("(WEBSOCKET) FILE NOT EXIST : DOWNLOAD %s" % d["name"])
+                self.logger.print_log("(WEBSOCKET) NEW FILE UPLOADED %s" % d["name"])
                 asyncio.run(self.api.downloadFile(d["id"]))
                 
             elif d["md5"] != f_loc.md5:
@@ -154,7 +151,7 @@ class FileChecker(RegexMatchingEventHandler):
                 self.filelist.serverUpdate(f_loc)
                 f = self.filelist.append_tmp(str(self.filelist.getRealPath(d["path"])))
                 asyncio.run(self.api.downloadFile(f_loc.id))
-                self.logger.print_log("(WEBSOCKET) FILE UPDATED : DOWNLOAD %s" % f_loc.name)
+                self.logger.print_log("(WEBSOCKET) FILE UPDATED %s" % f_loc.name)
                 
             elif Path(d["path"]) != f_loc.sync_path:
                 r_src_path_str = str(f_loc.real_path)
@@ -221,7 +218,7 @@ class FileChecker(RegexMatchingEventHandler):
         
         f = self.filelist.move(event.src_path, event.dest_path)
         if f == -1:
-            self.logger.print_log("(WATCHDOG) MOVE DEST NOT FOUND : %s TO %s" % (event.src_path, event.dest_path))
+            # self.logger.print_log("(WATCHDOG) MOVE DEST NOT FOUND : %s TO %s" % (event.src_path, event.dest_path))
             return
         else:
             if not f.serverUpdating:
@@ -238,7 +235,7 @@ class FileChecker(RegexMatchingEventHandler):
             # print("😡 on deleted dir", event.src_path)
             fs = self.filelist.del_dir(event.src_path)
             if fs == []:
-                self.logger.print_log("(WATCHDOG) DELETE EMPTY DIR : %s" % event.src_path)
+                # self.logger.print_log("(WATCHDOG) DELETE EMPTY DIR : %s" % event.src_path)
                 return
             else:
                 for f in fs:
@@ -250,7 +247,7 @@ class FileChecker(RegexMatchingEventHandler):
             # print("😡 on deleted file", event.src_path)
             f = self.filelist.del_file(event.src_path)
             if f == -1:
-                self.logger.print_log("(WATCHDOG) CLEAR INVALID FILE : %s" % event.src_path)
+                # self.logger.print_log("(WATCHDOG) CLEAR INVALID FILE : %s" % event.src_path)
                 return
             elif f == 0:
                 # print("😀 on delete socket detected")
@@ -274,7 +271,7 @@ class FileChecker(RegexMatchingEventHandler):
         f = self.filelist.modify(event.src_path)
         
         if f == -1:
-            self.logger.print_log("(WATCHDOG) CAN'T NOT FIND FILE")
+            # self.logger.print_log("(WATCHDOG) CAN'T NOT FIND FILE")
             # print("😡 Modify error cannot find file", event.src_path)
             return
         elif f == 0:

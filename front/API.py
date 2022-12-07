@@ -86,8 +86,8 @@ class API():
                             # print(filelist)
                             await fileChecker.socketDataCheck(json.loads(filelist))
                         except TypeError as e:
-                            print(e)
-                            print("SOCKET DISCONNECTED")
+                            # print(e)
+                            self.logger.print_log("SOCKET DISCONNTECTED")
                             self.app.socketError = True
                             await ws.close()
                             break
