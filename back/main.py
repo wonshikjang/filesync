@@ -72,7 +72,7 @@ async def delete_file_data(id:str,db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Record not found")
     
     filenames = os.listdir("./static")
-    print(filenames)
+    # print(filenames)
     for filename in filenames:
         if re.match(f"{id}\..*?", filename):
             os.remove(f"./static/{filename}")
