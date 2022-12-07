@@ -93,19 +93,18 @@ class FileChecker(RegexMatchingEventHandler):
         self.observer.start()
     
     async def socketDataCheck(self, d_list):
-        
         # 빈 폴더들 삭제
-        for (path, dir, file) in os.walk(self.target):
-            for d in dir:
-                try:
-                    if os.path.exists("%s/.DS_Store" % path):
-                        os.remove("%s/.DS_Store" % path)
-                    os.rmdir("%s/%s" % (path, d))
-                except:
-                    continue
+        # for (path, dir, file) in os.walk(self.target):
+        #     for d in dir:
+        #         try:
+        #             if os.path.exists("%s/.DS_Store" % path):
+        #                 os.remove("%s/.DS_Store" % path)
+        #             os.rmdir("%s/%s" % (path, d))
+        #         except:
+        #             continue
         
         # 파일 받아오기
-        need_update = asyncio.run(self.api.getFileList())
+        # need_update = asyncio.run(self.api.getFileList())
         self.logger.print_log("(WATCHDOG) WATCHING FILES...")
         print("----WEBSOCKETS DATALIST----")
         if len(d_list) == 0:
