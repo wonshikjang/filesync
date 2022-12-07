@@ -23,9 +23,9 @@ class FileList():
         return file_list
     
     def updateTarget(self, target):
-        self.target = target
+        self.target = str(Path(target))
         for file in self.fileList:
-            file.target = target
+            file.target = str(Path(target))
     
     def search(self, path):
         for f in self.fileList:
@@ -50,14 +50,11 @@ class FileList():
         for file in self.fileList:
             valid = False
             for d in d_list:
+                print(":D", d)
                 if file.sync_path.resolve() == Path(d["path"]).resolve():
-                    file.id = d["id"]
+                    file.id = uuid.UUID(d["id"])
                     valid = True
                     break
-                else:
-                    if file.id == d["id"]:
-                        valid = True
-                        break
             if not valid:
                 invalid.append(file)
         return invalid

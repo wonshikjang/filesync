@@ -227,11 +227,11 @@ class FileChecker(RegexMatchingEventHandler):
     def on_deleted(self, event):
         # 임시 파일 삭제되는 것 무시
         if re.match(f"{self.target}/.*?\.txt\.[a-zA-Z0-9-]+", str(event.src_path)):
-            # print(event.src_path)
+            print("temp ignored!", event.src_path)
             return
         
         if event.is_directory:
-            # print("😡 on deleted dir", event.src_path)
+            print("😡 on deleted dir", event.src_path)
             fs = self.filelist.del_dir(event.src_path)
             if fs == []:
                 # self.logger.print_log("(WATCHDOG) DELETE EMPTY DIR : %s" % event.src_path)
