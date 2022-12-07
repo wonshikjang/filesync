@@ -17,6 +17,7 @@ from database import engine
 from database import SessionLocal
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi_socketio import SocketManager
+from loguru import logger
 
 model.Base.metadata.create_all(bind=engine)
 
@@ -122,14 +123,16 @@ class ConnectionManager:
         self.active_connections.append(websocket)
 
     def print_connections(self):
-        print("SERVER WATCHING : \n[")
-        for active in self.active_connections:    
+        logger.debug("SERVER WATCHING :")
+        print("[")
+        for active in self.active_connections:
             print("    ", active.client)
         print("]")
     
     def disconnect(self, websocket: WebSocket):
         self.active_connections.remove(websocket)
-        print("Distconnect", websocket.client)
+        logger.debug("Distconnect", websocket.client)
+        print(websocket.client)
 
     async def send_personal_message(self, websocket: WebSocket, db_list: [schema.BaseFileData]):
         d_list = []
