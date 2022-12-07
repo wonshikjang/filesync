@@ -50,7 +50,7 @@ class FileList():
         for file in self.fileList:
             valid = False
             for d in d_list:
-                if str(file.sync_path) == d["path"]:
+                if file.sync_path.resolve() == Path(d["path"]).resolve():
                     file.id = d["id"]
                     valid = True
                     break
