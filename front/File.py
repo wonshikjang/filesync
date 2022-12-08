@@ -40,7 +40,7 @@ class FileList():
         return None
     
     def getRealPath(self, sync_path):
-        return Path(sync_path.replace("Root", str(self.target.as_posix())))
+        return Path(sync_path.replace("Root", str(Path(self.target).as_posix())))
     
     def getDirPath(self, real_path):
         return Path(real_path).parent
