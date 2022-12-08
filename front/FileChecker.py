@@ -1,6 +1,7 @@
 from File import File, FileList
 import asyncio
-import os, re
+import os
+import regex as re
 import uuid
 from pathlib import Path
 from Error import AlreadyChecked, NeedToUpdated
@@ -19,7 +20,7 @@ except ModuleNotFoundError as e:
 class FileChecker(RegexMatchingEventHandler):
     def __init__(self, app, _target, _logger, _config):
         super().__init__(None, [".*\.py",".*\.pyc",".*\.ini", ".*\.DS\_Store", ".*thumbs\.db"], False, False)
-        self.target = _target
+        self.target = str(Path(_target))
         self.filelist = FileList(self.target)
         self.logger = _logger
         self.config = _config
@@ -29,7 +30,7 @@ class FileChecker(RegexMatchingEventHandler):
         self.syncToServer(self.findToUpdate())
 
     def reset_set_path(self, target):
-        self.target = target
+        self.target = str(Path(target))
         self.filelist.updateTarget(target)
         self.api.target = target
         self.observer = self.setObserver(self.target)
@@ -174,17 +175,17 @@ class FileChecker(RegexMatchingEventHandler):
             
     def setObserver(self, target):
         observer = Observer()
-        observer.schedule(self, target, recursive=True)
+        observer.schedule(self, str(Path(target)), recursive=True)
         return observer
         
     def on_created(self, event):
-        if event.is_directory:
+        if event.is_directory or os.path.isdir(Path(event.src_path)):
             return
         
         # print("😡 on created", event.src_path)
         
         # 터미널 서 파일 생성 시 .파일이름.txt.swt? 무시
-        if re.match(f"{self.target}/.*?\.txt\.[a-zA-Z0-9-~]+", str(event.src_path)):
+        if re.match(f"{str(Path(self.target).as_posix())}/.*?\.txt\.[a-zA-Z0-9-]+", str(event.src_path)):
             # print("first")
             # print(event.src_path)
             return
@@ -211,7 +212,7 @@ class FileChecker(RegexMatchingEventHandler):
         # print("😡 on moved", event.src_path, event.dest_path)
         
         # txt 파일 수정 시 임시 파일 생성으로 move 되고 moved 되는 것 무시
-        if re.match(f"{self.target}/.*?\.txt\.[a-zA-Z0-9-]+", str(event.dest_path)):
+        if re.match(f"{str(Path(self.target).as_posix())}/.*?\.txt\.[a-zA-Z0-9-]+", str(event.src_path)):
             # print(event.dest_path)
             return
         
@@ -225,12 +226,13 @@ class FileChecker(RegexMatchingEventHandler):
                 asyncio.run(self.api.modifyFile(f))
     
     def on_deleted(self, event):
+        print("😡 deleted event occur!", event.src_path, event)
         # 임시 파일 삭제되는 것 무시
-        if re.match(f"{self.target}/.*?\.txt\.[a-zA-Z0-9-]+", str(event.src_path)):
+        if re.match(f"{str(Path(self.target).as_posix())}/.*?\.txt\.[a-zA-Z0-9-]+", str(event.src_path)):
             print("temp ignored!", event.src_path)
             return
-        
-        if event.is_directory:
+
+        if event.is_directory or Path(event.src_path).is_dir():
             print("😡 on deleted dir", event.src_path)
             fs = self.filelist.del_dir(event.src_path)
             if fs == []:
@@ -257,13 +259,13 @@ class FileChecker(RegexMatchingEventHandler):
                 del f
         
     def on_modified(self, event):
-        if event.is_directory:
+        if event.is_directory or os.path.isdir(Path(event.src_path)):
             return
         
         # print("😡 on modified", event.src_path)
         
         # 임시 파일 변경 무시
-        if re.match(f"{self.target}/.*?\.txt\.[a-zA-Z0-9-]+", str(event.src_path)):
+        if re.match(f"{str(Path(self.target).as_posix())}/.*?\.txt\.[a-zA-Z0-9-]+", str(event.src_path)):
             # print(event.src_path)
             return 
         
