@@ -50,7 +50,7 @@ class FileList():
         for file in self.fileList:
             valid = False
             for d in d_list:
-                print(":D", d)
+                # print(":D", d)
                 if file.sync_path.resolve() == Path(d["path"]).resolve():
                     file.id = uuid.UUID(d["id"])
                     valid = True

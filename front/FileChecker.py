@@ -126,12 +126,14 @@ class FileChecker(RegexMatchingEventHandler):
         # d_list에 존재하지 않는 파일 삭제
         invalid = self.filelist.updateId(d_list)
         # print("🤪", invalid)
-        for f_loc in invalid:
-            self.filelist.serverUpdate(f_loc)
-            os.remove(f_loc.real_path)
-            self.filelist.serverUpdate(f_loc)
-            self.filelist.del_file(f_loc.real_path)
-            self.logger.print_log("(WEBSOCKET) FILE DELETED : %s" % f_loc.name)
+        if invalid != []:
+            for f_loc in invalid:
+                self.filelist.serverUpdate(f_loc)
+                os.remove(f_loc.real_path)
+                self.filelist.serverUpdate(f_loc)
+                self.filelist.del_file(f_loc.real_path)
+                self.logger.print_log("(WEBSOCKET) FILE DELETED : %s" % f_loc.name)
+
 
         for d in d_list:
             f_loc = self.filelist.search_id(d["id"])
