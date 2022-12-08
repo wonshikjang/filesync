@@ -76,7 +76,8 @@ class App:
     def set_server(self):
         server = tkinter.simpledialog.askstring("Input", "Input server IP", parent=self.window)
         port = tkinter.simpledialog.askstring("Input", "Input server port", parent=self.window)
-        self.config.setConfig("CLIENT_CONFIG", "server_ip", server)
+        http_server = "http://" + str(server)
+        self.config.setConfig("CLIENT_CONFIG", "server_ip", http_server)
         self.config.setConfig("CLIENT_CONFIG", "port", port)
 
     def set_path(self):

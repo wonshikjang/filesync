@@ -187,7 +187,7 @@ class FileChecker(RegexMatchingEventHandler):
         # print("😡 on created", event.src_path)
         
         # 터미널 서 파일 생성 시 .파일이름.txt.swt? 무시
-        if re.match(f"{str(Path(self.target).as_posix())}/.*?\.txt\.[a-zA-Z0-9-]+", str(event.src_path)):
+        if re.match(f"{str(Path(self.target).as_posix())}/.*?\.txt\.[a-zA-Z0-9-]+", str(Path(event.src_path).as_posix())):
             # print("first")
             # print(event.src_path)
             return
@@ -224,13 +224,13 @@ class FileChecker(RegexMatchingEventHandler):
             return
         else:
             if not f.serverUpdating:
-                self.logger.print_log("(WATCHDOG) FILE '%s' MOVED \n%sFROM %s \n%sTO%s" % (f.name, " "*21, re.sub(self.target, "Root", event.src_path), " "*21, re.sub(self.target, "Root", event.dest_path)))
+                self.logger.print_log("(WATCHDOG) FILE '%s' MOVED \n%sFROM %s \n%sTO%s" % (f.name, " "*21, re.sub(str(Path(self.target).as_posix()), "Root", str(Path(event.src_path).as_posix())), " "*21, re.sub(self.target, "Root", str(Path(event.dest_path).as_posix()))))
                 asyncio.run(self.api.modifyFile(f))
     
     def on_deleted(self, event):
         print("😡 deleted event occur!", event.src_path, event)
         # 임시 파일 삭제되는 것 무시
-        if re.match(f"{str(Path(self.target).as_posix())}/.*?\.txt\.[a-zA-Z0-9-]+", str(event.src_path)):
+        if re.match(f"{str(Path(self.target).as_posix())}/.*?\.txt\.[a-zA-Z0-9-]+", str(Path(event.src_path).as_posix())):
             print("temp ignored!", event.src_path)
             return
 
@@ -267,7 +267,7 @@ class FileChecker(RegexMatchingEventHandler):
         # print("😡 on modified", event.src_path)
         
         # 임시 파일 변경 무시
-        if re.match(f"{str(Path(self.target).as_posix())}/.*?\.txt\.[a-zA-Z0-9-]+", str(event.src_path)):
+        if re.match(f"{str(Path(self.target).as_posix())}/.*?\.txt\.[a-zA-Z0-9-]+", str(Path(event.src_path).as_posix())):
             # print(event.src_path)
             return 
         

@@ -4,8 +4,8 @@ import os
 class Config:
     def __init__(self):
         self.config = configparser.ConfigParser()
-        # self.ini_path = self.findIni()
-        self.ini_path = self.findIni2()
+        self.ini_path = self.findIni()
+        #self.ini_path = self.findIni2()
         
     def findIni(self):
         for (path, dir, files) in os.walk("."):
