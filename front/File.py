@@ -8,7 +8,7 @@ from Error import AlreadyChecked
 
 class FileList():
     def __init__(self, target):
-        self.target = target
+        self.target = str(Path(target).as_posix())
         self.fileList = []
         # 서버에서 총 파일 리스트 업데이트
     
@@ -23,9 +23,9 @@ class FileList():
         return file_list
     
     def updateTarget(self, target):
-        self.target = str(Path(target))
+        self.target = str(Path(target).as_posix())
         for file in self.fileList:
-            file.target = str(Path(target))
+            file.target = self.target
     
     def search(self, path):
         for f in self.fileList:
@@ -40,7 +40,7 @@ class FileList():
         return None
     
     def getRealPath(self, sync_path):
-        return Path(sync_path.replace("Root", str(self.target)))
+        return Path(sync_path.replace("Root", str(self.target.as_posix())))
     
     def getDirPath(self, real_path):
         return Path(real_path).parent
@@ -51,7 +51,7 @@ class FileList():
             valid = False
             for d in d_list:
                 # print(":D", d)
-                if file.sync_path.resolve() == Path(d["path"]).resolve():
+                if file.sync_path.resolve().as_posix() == Path(d["path"]).resolve().as_posix():
                     file.id = uuid.UUID(d["id"])
                     valid = True
                     break
@@ -149,7 +149,7 @@ class File():
         self.target = Path(_target) # target 경로
         self.real_path = Path(_path) # 파일 실제 경로
         self.name = self.real_path.name # 파일 이름
-        self.sync_path = Path(str(self.real_path).replace(str(self.target), "Root"))
+        self.sync_path = Path(str(self.real_path.as_posix()).replace(str(self.target.as_posix()), "Root"))
         self.dir = self.sync_path.parent # 파일 가상 디렉토리
         self.serverUpdating = False
         if _wait:

@@ -126,7 +126,7 @@ class FileChecker(RegexMatchingEventHandler):
         # d_list에 존재하지 않는 파일 삭제
         invalid = self.filelist.updateId(d_list)
         # print("🤪", invalid)
-        if invalid != []:
+        if invalid:
             for f_loc in invalid:
                 self.filelist.serverUpdate(f_loc)
                 os.remove(f_loc.real_path)
@@ -224,7 +224,7 @@ class FileChecker(RegexMatchingEventHandler):
             return
         else:
             if not f.serverUpdating:
-                self.logger.print_log("(WATCHDOG) FILE '%s' MOVED \n%sFROM %s \n%sTO%s" % (f.name, " "*21, re.sub(str(Path(self.target).as_posix()), "Root", str(Path(event.src_path).as_posix())), " "*21, re.sub(self.target, "Root", str(Path(event.dest_path).as_posix()))))
+                self.logger.print_log("(WATCHDOG) FILE '%s' MOVED \n%sFROM %s \n%sTO%s" % (f.name, " "*21, re.sub(str(Path(self.target).as_posix()), "Root", str(Path(event.src_path).as_posix())), " "*21, re.sub(str(Path(self.target).as_posix()), "Root", str(Path(event.dest_path).as_posix()))))
                 asyncio.run(self.api.modifyFile(f))
     
     def on_deleted(self, event):

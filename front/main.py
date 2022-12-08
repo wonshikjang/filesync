@@ -113,8 +113,8 @@ class App:
     def openSockets(self):
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
-        asyncio.get_event_loop().run_until_complete(self.fileChecker.api.connectSocket(self.fileChecker));
-        asyncio.get_event_loop().run_forever();
+        asyncio.get_event_loop().run_until_complete(self.fileChecker.api.connectSocket(self.fileChecker))
+        asyncio.get_event_loop().run_forever()
         
     def socketDisconnect(self):
         self.fileChecker.socketDisconnect()
@@ -130,5 +130,3 @@ if __name__ == '__main__':
     t.start()
     
     app.window.mainloop()
-    
-    
