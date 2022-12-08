@@ -92,20 +92,8 @@ class FileChecker(RegexMatchingEventHandler):
         self.logger.print_log("SYNCHRONIZATION COMPLETE")
         self.logger.print_log("")
         self.observer.start()
-    
-    async def socketDataCheck(self, d_list):
-        # 빈 폴더들 삭제
-        # for (path, dir, file) in os.walk(self.target):
-        #     for d in dir:
-        #         try:
-        #             if os.path.exists("%s/.DS_Store" % path):
-        #                 os.remove("%s/.DS_Store" % path)
-        #             os.rmdir("%s/%s" % (path, d))
-        #         except:
-        #             continue
         
-        # 파일 받아오기
-        # need_update = asyncio.run(self.api.getFileList())
+    async def socketDataCheck(self, d_list):
         self.logger.print_log("(WATCHDOG) WATCHING FILES...")
         print("----WEBSOCKETS DATALIST----")
         if len(d_list) == 0:
@@ -122,10 +110,10 @@ class FileChecker(RegexMatchingEventHandler):
         print("----LOCAL FILE DATALIST----")
         print(self.filelist)
         
-        # path 같을 시 id 업데이트
-        # d_list에 존재하지 않는 파일 삭제
+        # # path 같을 시 id 업데이트
+        # # d_list에 존재하지 않는 파일 삭제
         invalid = self.filelist.updateId(d_list)
-        # print("🤪", invalid)
+        # # print("🤪", invalid)
         if invalid:
             for f_loc in invalid:
                 self.filelist.serverUpdate(f_loc)
@@ -136,8 +124,17 @@ class FileChecker(RegexMatchingEventHandler):
 
 
         for d in d_list:
-            f_loc = self.filelist.search_id(d["id"])
-        
+            f_loc_id = self.filelist.search_id(d["id"])
+            f_loc_path = self.filelist.search(self.filelist.getRealPath(d["path"]))
+
+            if f_loc_id != f_loc_path:
+                self.filelist.del_file(f_loc_path)
+            
+            if not f_loc_id and f_loc_path:
+                f_loc_path.id = uuid.UUID(d["id"])
+            
+            f_loc = f_loc_id
+                
             # 파일이 존재하지 않으면 생성
             if not f_loc:
                 # 파일 다운로드
@@ -211,11 +208,14 @@ class FileChecker(RegexMatchingEventHandler):
             asyncio.run(self.api.uploadFile(f))
         
     def on_moved(self, event):
-        # print("😡 on moved", event.src_path, event.dest_path)
+        print("😡 on moved", event.src_path, event.dest_path)
         
         # txt 파일 수정 시 임시 파일 생성으로 move 되고 moved 되는 것 무시
-        if re.match(f"{str(Path(self.target).as_posix())}/.*?\.txt\.[a-zA-Z0-9-]+", str(event.src_path)):
-            # print(event.dest_path)
+        if re.match(f"{str(Path(self.target).as_posix())}/.*?\.txt\.[a-zA-Z0-9-]+", str(Path(event.src_path).as_posix())):
+            print("src_ignored", event.dest_path)
+            return
+        if re.match(f"{str(Path(self.target).as_posix())}/.*?\.txt\.[a-zA-Z0-9-]+", str(Path(event.dest_path).as_posix())):
+            print("dest ignored!", event.src_path)
             return
         
         f = self.filelist.move(event.src_path, event.dest_path)
@@ -259,7 +259,6 @@ class FileChecker(RegexMatchingEventHandler):
                 asyncio.run(self.api.deleteFile(f))
                 self.logger.print_log("(WATCHDOG) FILE '%s' DELETED FROM %s" % (f.name, f.dir))
                 del f
-        
     def on_modified(self, event):
         if event.is_directory or os.path.isdir(Path(event.src_path)):
             return
