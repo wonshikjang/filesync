@@ -288,4 +288,4 @@ class FileChecker(RegexMatchingEventHandler):
             asyncio.run(self.api.modifyFile(f[1]))
             asyncio.run(self.api.uploadFile(f[1]))
             self.logger.print_log("(WATCHDOG) File '%s' Modified %d bytes to %d bytes" % (f[1].name, f[0].size, f[1].size)) 
-            del f[0]        
+            del f[0]
