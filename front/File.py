@@ -187,7 +187,7 @@ class File():
     def makeMd5(self, path):
         temp_path = Path(path).resolve()
         try:
-            f = open(str(temp_path), 'rb').read()
+            f = open(str(temp_path), 'r').read()
             md5 = hashlib.md5(f.encode()).hexdigest()
             return md5
         except UnicodeDecodeError:
